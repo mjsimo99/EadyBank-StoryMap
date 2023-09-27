@@ -95,7 +95,31 @@ public class EmployeImpl implements Iemploye {
 
     @Override
     public List<Employe> SearchByDateR(Date dateRecrutement) {
-        return null;
+        List<Employe> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_DATE_RECRUTEMENT)) {
+            preparedStatement.setDate(1, new java.sql.Date(dateRecrutement.getTime()));
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Employe employe = new Employe(
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        resultSet.getString("matricule"),
+                        resultSet.getDate("dateRecrutement"),
+                        resultSet.getString("emailAdresse"),
+                        null,
+                        null,
+                        null
+                );
+                resultList.add(employe);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
