@@ -67,10 +67,41 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public List<Compte> SearchByClient(Client client) {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CLIENT);
+            preparedStatement.setString(1, client.getCode());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                EtatCompte etat = EtatCompte.valueOf(etatStr);
 
 
-        return null;
+                PreparedStatement decouvertStatement = connection.prepareStatement(SEARCH_BY_CLIENT_DECOUVERT);
+                decouvertStatement.setString(1, numero);
+                ResultSet decouvertResultSet = decouvertStatement.executeQuery();
+                float decouvert = 0;
+
+                if (decouvertResultSet.next()) {
+                    decouvert = decouvertResultSet.getFloat("decouvert");
+                }
+
+                CompteCourant compteCourant = new CompteCourant(numero, sold, dateCreation, etat, client, null, null, decouvert);
+                compteList.add(compteCourant);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
+
 
 
 

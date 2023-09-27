@@ -91,7 +91,38 @@ public class CompteEpargneImpl implements Icompte {
 
     @Override
     public List<Compte> SearchByClient(Client client) {
-        return null;
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CLIENT);
+            preparedStatement.setString(1, client.getCode());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                EtatCompte etat = EtatCompte.valueOf(etatStr);
+
+                PreparedStatement tauxStatement = connection.prepareStatement(SEARCH_BY_CLIENT_TAUX);
+                tauxStatement.setString(1, numero);
+                ResultSet tauxResultSet = tauxStatement.executeQuery();
+                double tauxInteret = 0.0;
+
+                if (tauxResultSet.next()) {
+                    tauxInteret = tauxResultSet.getDouble("tauxInteret");
+                }
+
+                CompteEpargne compteEpargne = new CompteEpargne(numero, sold, dateCreation, etat, client, null, null, tauxInteret);
+                compteList.add(compteEpargne);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
 
     @Override
