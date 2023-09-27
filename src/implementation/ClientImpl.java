@@ -24,16 +24,40 @@ public class ClientImpl implements Iclient {
 
     @Override
     public List<Client> SearchByCode(String code) {
-
-        return null;
+        List<Client> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CODE)) {
+            preparedStatement.setString(1, code);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Client client = new Client(
+                        resultSet.getString("code"),
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        null
+                );
+                resultList.add(client);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
     public boolean Delete(String code) {
-
-        return false;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT)) {
+            preparedStatement.setString(1, code);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
-
     @Override
     public List<Client> Showlist() {
 
@@ -54,7 +78,22 @@ public class ClientImpl implements Iclient {
 
     @Override
     public Personne Add(Personne personne) {
+        if (personne instanceof Client) {
+            Client client = (Client) personne;
+            Connection connection = DatabaseConnection.getConn();
+            try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_CLIENT)) {
+                preparedStatement.setString(1, client.getCode());
+                preparedStatement.setString(2, client.getNom());
+                preparedStatement.setString(3, client.getPrenom());
+                preparedStatement.setDate(4, new java.sql.Date(client.getDateN().getTime()));
+                preparedStatement.setString(5, client.getTel());
+                preparedStatement.setString(6, client.getAdress());
 
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return personne;
     }
 }
