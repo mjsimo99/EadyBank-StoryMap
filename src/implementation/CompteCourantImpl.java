@@ -224,7 +224,33 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public List<Compte> FilterByDCreation(Date dateCreation) {
-        return null;
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+
+            String filterByDCreationQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, cc.decouvert " + "FROM Comptes c " + "LEFT JOIN ComptesCourants cc ON c.numero = cc.numeroCompte " + "WHERE c.dateCreation = ?";
+
+            PreparedStatement preparedStatement = connection.prepareStatement(filterByDCreationQuery);
+            preparedStatement.setDate(1, new java.sql.Date(dateCreation.getTime()));
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date creationDate = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                double decouvert = resultSet.getDouble("decouvert");
+
+                Compte compte = new CompteCourant(numero, sold, creationDate, EtatCompte.valueOf(etatStr), null, null, null, decouvert);
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
 
 
