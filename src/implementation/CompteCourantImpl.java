@@ -174,8 +174,30 @@ public class CompteCourantImpl implements Icompte {
         return compteList;
     }
 
+
     public static Compte GetByNumero(String numero) {
-              return null;
+        Connection connection = DatabaseConnection.getConn();
+        Compte compte = null;
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(GET_COMPTE_BYNUMBER);
+            preparedStatement.setString(1, numero);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                String fetchedNumero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                EtatCompte etat = EtatCompte.valueOf(etatStr);
+
+                compte = new CompteCourant(fetchedNumero, sold, dateCreation, etat, null, null, null, 0.0);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compte;
     }
 
 
