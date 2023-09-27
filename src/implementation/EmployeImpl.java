@@ -53,8 +53,15 @@ public class EmployeImpl implements Iemploye {
     }
 
     @Override
-    public boolean Delete(String marticule) {
-        return false;
+    public boolean Delete(String matricule) {
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_EMPLOYE)) {
+            preparedStatement.setString(1, matricule);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
