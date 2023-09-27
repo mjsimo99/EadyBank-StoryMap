@@ -31,10 +31,35 @@ public class CompteCourantImpl implements Icompte {
 
 
 
-
     @Override
     public Compte Add(Compte compte) {
+        if (compte instanceof CompteCourant compteCourant) {
+            Connection connection = DatabaseConnection.getConn();
 
+            try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_COMPTE_COURANT)) {
+                preparedStatement.setString(1, compteCourant.getNumero());
+                preparedStatement.setDouble(2, compteCourant.getSold());
+                preparedStatement.setDate(3, new java.sql.Date(compteCourant.getDateCreation().getTime()));
+                preparedStatement.setString(4, compteCourant.getEtat().name());
+                preparedStatement.setString(5, compteCourant.getClient().getCode());
+                preparedStatement.setString(6, compteCourant.getEmploye().getMatricule());
+
+                int rowsInserted = preparedStatement.executeUpdate();
+                if (rowsInserted > 0) {
+                    try (PreparedStatement compteCourantStatement = connection.prepareStatement(ADD_COMPTE_COURANT_TABLE)) {
+                        compteCourantStatement.setString(1, compteCourant.getNumero());
+                        compteCourantStatement.setDouble(2, compteCourant.getDecouvert());
+                        compteCourantStatement.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return compteCourant;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return null;
     }
 
