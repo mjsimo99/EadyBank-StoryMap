@@ -163,7 +163,34 @@ public class CompteEpargneImpl implements Icompte {
 
     @Override
     public List<Compte> FilterByStatus(EtatCompte etat) {
-        return null;
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+            String filterByStatusQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
+                    "FROM Comptes c " +
+                    "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
+                    "WHERE c.etat = ? ORDER BY c.etat DESC";
+
+            PreparedStatement preparedStatement = connection.prepareStatement(filterByStatusQuery);
+            preparedStatement.setString(1, etat.name());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                double tauxInteret = resultSet.getDouble("tauxInteret");
+
+                Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
 
     @Override

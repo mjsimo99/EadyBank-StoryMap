@@ -175,10 +175,30 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public List<Compte> FilterByStatus(EtatCompte etat) {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        return null;
+        try {
+            String filterByStatusQuery = "SELECT * FROM Comptes WHERE etat = ? ORDER BY etat DESC";
+            PreparedStatement preparedStatement = connection.prepareStatement(filterByStatusQuery);
+            preparedStatement.setString(1, etat.name());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+
+                Compte compte = new CompteCourant(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, 0.0);
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
-
 
 
 
