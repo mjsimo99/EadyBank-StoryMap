@@ -84,8 +84,27 @@ public class ClientImpl implements Iclient {
 
     @Override
     public List<Client> SearchByPrenom(String prenom) {
-
-        return null;
+        List<Client> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_PRENOM)) {
+            preparedStatement.setString(1, prenom);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Client client = new Client(
+                        resultSet.getString("code"),
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        null // List<Compte> comptes is not retrieved from the database in this example
+                );
+                resultList.add(client);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
