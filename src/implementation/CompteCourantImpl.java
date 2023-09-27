@@ -149,9 +149,29 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public List<Compte> ShowList() {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(LIST_COMPTE);
+            ResultSet resultSet = preparedStatement.executeQuery();
 
+            while (resultSet.next()){
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                EtatCompte etat = EtatCompte.valueOf(etatStr);
+                double decouvert = resultSet.getDouble("decouvert");
 
-        return null;
+                Compte compte = new CompteCourant(numero, sold, dateCreation, etat, null, null, null, decouvert);
+
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
 
     public static Compte GetByNumero(String numero) {
