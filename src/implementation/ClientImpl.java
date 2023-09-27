@@ -109,9 +109,26 @@ public class ClientImpl implements Iclient {
 
     @Override
     public Client Update(Client client) {
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_CLIENT)) {
+            preparedStatement.setString(1, client.getNom());
+            preparedStatement.setString(2, client.getPrenom());
+            preparedStatement.setDate(3, new java.sql.Date(client.getDateN().getTime()));
+            preparedStatement.setString(4, client.getTel());
+            preparedStatement.setString(5, client.getAdress());
+            preparedStatement.setString(6, client.getCode());
 
-        return client;
+            int rowsUpdated = preparedStatement.executeUpdate();
+            if (rowsUpdated > 0) {
+                return client;
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
     @Override
     public Personne Add(Personne personne) {
