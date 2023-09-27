@@ -124,7 +124,27 @@ public class EmployeImpl implements Iemploye {
 
     @Override
     public Employe Update(Employe employe) {
-        return null;
+        Connection connection = DatabaseConnection.getConn();
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_EMPLOYE)) {
+            preparedStatement.setDate(1, new java.sql.Date(employe.getDateRecrutement().getTime()));
+            preparedStatement.setString(2, employe.getEmailAdresse());
+            preparedStatement.setString(3, employe.getNom());
+            preparedStatement.setString(4, employe.getPrenom());
+            preparedStatement.setDate(5, new java.sql.Date(employe.getDateN().getTime()));
+            preparedStatement.setString(6, employe.getTel());
+            preparedStatement.setString(7, employe.getAdress());
+            preparedStatement.setString(8, employe.getMatricule());
+
+            int rowsUpdated = preparedStatement.executeUpdate();
+            if (rowsUpdated > 0) {
+                return employe;
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
