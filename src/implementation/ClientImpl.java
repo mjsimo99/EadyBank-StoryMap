@@ -49,10 +49,15 @@ public class ClientImpl implements Iclient {
 
     @Override
     public boolean Delete(String code) {
-
-        return false;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT)) {
+            preparedStatement.setString(1, code);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
-
     @Override
     public List<Client> Showlist() {
 
