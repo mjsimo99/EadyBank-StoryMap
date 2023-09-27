@@ -127,7 +127,17 @@ public class CompteEpargneImpl implements Icompte {
 
     @Override
     public boolean Delete(String numero) {
-        return false;
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+            PreparedStatement deleteComptesStatement = connection.prepareStatement(DELETE_COMPTE);
+            deleteComptesStatement.setString(1, numero);
+            int rowsDeleted = deleteComptesStatement.executeUpdate();
+
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
