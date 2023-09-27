@@ -60,8 +60,26 @@ public class ClientImpl implements Iclient {
     }
     @Override
     public List<Client> Showlist() {
-
-        return null;
+        List<Client> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_CLIENTS)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Client client = new Client(
+                        resultSet.getString("code"),
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        null
+                );
+                resultList.add(client);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
