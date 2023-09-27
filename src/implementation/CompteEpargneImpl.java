@@ -142,6 +142,22 @@ public class CompteEpargneImpl implements Icompte {
 
     @Override
     public Compte UpdateStatus(Compte compte) {
+        if (compte instanceof CompteEpargne compteEpargne) {
+            Connection connection = DatabaseConnection.getConn();
+
+            try {
+                PreparedStatement updateCompteStatusStatement = connection.prepareStatement(UPDATE_STATUS_COMPTE);
+                updateCompteStatusStatement.setString(1, compteEpargne.getEtat().name());
+                updateCompteStatusStatement.setString(2, compteEpargne.getNumero());
+
+                int rowsUpdated = updateCompteStatusStatement.executeUpdate();
+                if (rowsUpdated > 0) {
+                    return compteEpargne;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return null;
     }
 

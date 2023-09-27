@@ -122,12 +122,27 @@ public class CompteCourantImpl implements Icompte {
     }
 
 
-
     @Override
     public Compte UpdateStatus(Compte compte) {
+        if (compte instanceof CompteCourant compteCourant) {
+            Connection connection = DatabaseConnection.getConn();
 
+            try {
+                PreparedStatement updateCompteStatusStatement = connection.prepareStatement(UPDATE_STATUS_COMPTE);
+                updateCompteStatusStatement.setString(1, compteCourant.getEtat().name());
+                updateCompteStatusStatement.setString(2, compteCourant.getNumero());
+
+                int rowsUpdated = updateCompteStatusStatement.executeUpdate();
+                if (rowsUpdated > 0) {
+                    return compteCourant;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return null;
     }
+
 
 
 
