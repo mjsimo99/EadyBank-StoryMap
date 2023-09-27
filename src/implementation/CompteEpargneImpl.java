@@ -59,6 +59,33 @@ public class CompteEpargneImpl implements Icompte {
 
     @Override
     public Compte Add(Compte compte) {
+        if (compte instanceof CompteEpargne compteEpargne) {
+            Connection connection = DatabaseConnection.getConn();
+
+            try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_COMPTE_EPARGNE)) {
+                preparedStatement.setString(1, compteEpargne.getNumero());
+                preparedStatement.setDouble(2, compteEpargne.getSold());
+                preparedStatement.setDate(3, new java.sql.Date(compteEpargne.getDateCreation().getTime()));
+                preparedStatement.setString(4, compteEpargne.getEtat().name());
+                preparedStatement.setString(5, compteEpargne.getClient().getCode());
+                preparedStatement.setString(6, compteEpargne.getEmploye().getMatricule());
+
+                int rowsInserted = preparedStatement.executeUpdate();
+                if (rowsInserted > 0) {
+                    try (PreparedStatement compteEpargneStatement = connection.prepareStatement(ADD_COMPTE_EPARGNE_TABLE)) {
+                        compteEpargneStatement.setString(1, compteEpargne.getNumero());
+                        compteEpargneStatement.setDouble(2, compteEpargne.getTauxInteret());
+                        compteEpargneStatement.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return compteEpargne;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return null;
     }
 
