@@ -50,6 +50,24 @@ public class EmployeImpl implements Iemploye {
 
     @Override
     public Personne Add(Personne personne) {
-        return null;
+        if (personne instanceof Employe) {
+            Employe employe = (Employe) personne;
+            Connection connection = DatabaseConnection.getConn();
+            try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_EMPLOYE)) {
+                preparedStatement.setString(1, employe.getMatricule());
+                preparedStatement.setDate(2, new java.sql.Date(employe.getDateRecrutement().getTime()));
+                preparedStatement.setString(3, employe.getEmailAdresse());
+                preparedStatement.setString(4, employe.getNom());
+                preparedStatement.setString(5, employe.getPrenom());
+                preparedStatement.setDate(6, new java.sql.Date(employe.getDateN().getTime()));
+                preparedStatement.setString(7, employe.getTel());
+                preparedStatement.setString(8, employe.getAdress());
+
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return personne;
     }
 }
