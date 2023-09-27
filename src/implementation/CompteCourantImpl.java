@@ -208,10 +208,38 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public List<Compte> SearchByOperation(Operation operation) {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        return null;
+        try {
+            String searchByOperationQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, cc.decouvert " +
+                    "FROM Comptes c " +
+                    "LEFT JOIN ComptesCourants cc ON c.numero = cc.numeroCompte " +
+                    "INNER JOIN Operations ao ON c.numero = ao.compte_numero " +
+                    "WHERE ao.type = ?";
+
+            PreparedStatement preparedStatement = connection.prepareStatement(searchByOperationQuery);
+
+            preparedStatement.setString(1, operation.getType().name());
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                double decouvert = resultSet.getDouble("decouvert");
+
+                Compte compte = new CompteCourant(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, decouvert);
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
-
 
     @Override
     public List<Compte> FilterByStatus(EtatCompte etat) {
