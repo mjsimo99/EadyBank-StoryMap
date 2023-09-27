@@ -182,7 +182,27 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public Compte Update(Compte compte) {
+        if (compte instanceof CompteCourant compteCourant) {
+            Connection connection = DatabaseConnection.getConn();
 
+            try {
+
+                PreparedStatement updateCompteStatement = connection.prepareStatement(UPDATE_COMPTE);
+                updateCompteStatement.setDouble(1, compteCourant.getSold());
+                updateCompteStatement.setDate(2, new java.sql.Date(compteCourant.getDateCreation().getTime()));
+                updateCompteStatement.setString(3, compteCourant.getEtat().name());
+                updateCompteStatement.setString(4, compteCourant.getClient().getCode());
+                updateCompteStatement.setString(5, compteCourant.getEmploye().getMatricule());
+                updateCompteStatement.setString(6, compteCourant.getNumero());
+
+                int rowsUpdated = updateCompteStatement.executeUpdate();
+                if (rowsUpdated > 0) {
+                    return compteCourant;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return null;
     }
 
