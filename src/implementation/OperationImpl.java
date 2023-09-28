@@ -114,7 +114,26 @@ public class OperationImpl implements Ioperation {
 
     @Override
     public List<Operation> SearchByNumber(String numero) {
-        return null;
+        List<Operation> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_NUMBER)) {
+            preparedStatement.setString(1, numero);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Operation operation = new Operation(
+                        resultSet.getString("numero"),
+                        resultSet.getDate("datecreation"),
+                        resultSet.getDouble("montant"),
+                        TypeOperation.valueOf(resultSet.getString("type")),
+                        null,
+                        null
+                );
+                resultList.add(operation);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
