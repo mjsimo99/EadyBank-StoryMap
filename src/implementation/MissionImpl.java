@@ -20,8 +20,19 @@ public class MissionImpl implements Imission {
 
     @Override
     public Mission Add(Mission mission) {
-        return null;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_MISSION)) {
+            preparedStatement.setString(1, mission.getCode());
+            preparedStatement.setString(2, mission.getNome());
+            preparedStatement.setString(3, mission.getDescription());
+
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return mission;
     }
+
 
     @Override
     public boolean Delete(String code) {
