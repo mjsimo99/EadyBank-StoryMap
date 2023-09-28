@@ -80,7 +80,27 @@ public class AffectationImpl implements Iaffectation {
     @Override
     public int[] getAffectationStatistics() {
 
-        return new int[0];
+        Connection connection = DatabaseConnection.getConn();
+        String sqlTotalAffectations = "SELECT COUNT(*) AS TotalAffectations FROM Affectations";
+        String sqlTotalEmployees = "SELECT COUNT(DISTINCT employe_matricule) AS TotalEmployees FROM Affectations";
+        String sqlTotalMissions = "SELECT COUNT(DISTINCT mission_code) AS TotalMissions FROM Affectations";
+
+        try (PreparedStatement preparedStatementTotalAffectations = connection.prepareStatement(sqlTotalAffectations);
+             PreparedStatement preparedStatementTotalEmployees = connection.prepareStatement(sqlTotalEmployees);
+             PreparedStatement preparedStatementTotalMissions = connection.prepareStatement(sqlTotalMissions)) {
+
+            ResultSet resultSetTotalAffectations = preparedStatementTotalAffectations.executeQuery();
+            ResultSet resultSetTotalEmployees = preparedStatementTotalEmployees.executeQuery();
+            ResultSet resultSetTotalMissions = preparedStatementTotalMissions.executeQuery();
+
+            int totalAffectations = resultSetTotalAffectations.next() ? resultSetTotalAffectations.getInt("TotalAffectations") : 0;
+            int totalEmployees = resultSetTotalEmployees.next() ? resultSetTotalEmployees.getInt("TotalEmployees") : 0;
+            int totalMissions = resultSetTotalMissions.next() ? resultSetTotalMissions.getInt("TotalMissions") : 0;
+
+            return new int[] { totalAffectations, totalEmployees, totalMissions };
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
