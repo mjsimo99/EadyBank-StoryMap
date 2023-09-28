@@ -33,7 +33,7 @@ public class CompteEpargneImpl implements Icompte {
 
 
 
-    
+
     public static Compte GetByNumero(String numero) {
         Connection connection = DatabaseConnection.getConn();
         Compte compte = null;
