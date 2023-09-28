@@ -24,7 +24,6 @@ public class OperationImpl implements Ioperation {
     public Compte getCompteByNumero(String numero) {
         Connection connection = DatabaseConnection.getConn();
         try {
-            // First, check in ComptesCourants table
             String queryCourant = "SELECT * FROM ComptesCourants WHERE numeroCompte = ?";
             PreparedStatement preparedStatementCourant = connection.prepareStatement(GET_COMPTE_COYRANT);
             preparedStatementCourant.setString(1, numero);
@@ -97,16 +96,55 @@ public class OperationImpl implements Ioperation {
 
     @Override
     public Operation Add(Operation operation) {
-        return null;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_OPERATION)) {
+            preparedStatement.setString(1, operation.getNumero());
+            preparedStatement.setDate(2, new java.sql.Date(operation.getDateCreation().getTime()));
+            preparedStatement.setDouble(3, operation.getMontant());
+            preparedStatement.setString(4, operation.getType().toString());
+            preparedStatement.setString(5, operation.getEmploye().getMatricule());
+            preparedStatement.setString(6, operation.getCompte().getNumero());
+
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return operation;
     }
 
     @Override
     public List<Operation> SearchByNumber(String numero) {
-        return null;
+        List<Operation> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_NUMBER)) {
+            preparedStatement.setString(1, numero);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Operation operation = new Operation(
+                        resultSet.getString("numero"),
+                        resultSet.getDate("datecreation"),
+                        resultSet.getDouble("montant"),
+                        TypeOperation.valueOf(resultSet.getString("type")),
+                        null,
+                        null
+                );
+                resultList.add(operation);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
     public boolean Delete(String numero) {
-        return false;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_OPERATION)) {
+            preparedStatement.setString(1, numero);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
