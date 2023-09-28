@@ -49,7 +49,23 @@ public class MissionImpl implements Imission {
 
     @Override
     public List<Mission> ShowList() {
-        return null;
+        List<Mission> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_MISSIONS)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Mission mission = new Mission(
+                        resultSet.getString("code"),
+                        resultSet.getString("nom"),
+                        resultSet.getString("description"),
+                        null
+                );
+                resultList.add(mission);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
