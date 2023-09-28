@@ -138,6 +138,13 @@ public class OperationImpl implements Ioperation {
 
     @Override
     public boolean Delete(String numero) {
-        return false;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_OPERATION)) {
+            preparedStatement.setString(1, numero);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
