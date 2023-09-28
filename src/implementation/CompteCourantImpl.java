@@ -67,67 +67,260 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public List<Compte> SearchByClient(Client client) {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CLIENT);
+            preparedStatement.setString(1, client.getCode());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                EtatCompte etat = EtatCompte.valueOf(etatStr);
 
 
-        return null;
+                PreparedStatement decouvertStatement = connection.prepareStatement(SEARCH_BY_CLIENT_DECOUVERT);
+                decouvertStatement.setString(1, numero);
+                ResultSet decouvertResultSet = decouvertStatement.executeQuery();
+                float decouvert = 0;
+
+                if (decouvertResultSet.next()) {
+                    decouvert = decouvertResultSet.getFloat("decouvert");
+                }
+
+                CompteCourant compteCourant = new CompteCourant(numero, sold, dateCreation, etat, client, null, null, decouvert);
+                compteList.add(compteCourant);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
+
 
 
 
     @Override
     public boolean Delete(String numero) {
+        Connection connection = DatabaseConnection.getConn();
 
-        return false;
+        try {
+            PreparedStatement deleteComptesStatement = connection.prepareStatement(DELETE_COMPTE);
+            deleteComptesStatement.setString(1, numero);
+            int rowsDeleted = deleteComptesStatement.executeUpdate();
+
+            return rowsDeleted > 0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
     @Override
     public Compte UpdateStatus(Compte compte) {
+        if (compte instanceof CompteCourant compteCourant) {
+            Connection connection = DatabaseConnection.getConn();
 
+            try {
+                PreparedStatement updateCompteStatusStatement = connection.prepareStatement(UPDATE_STATUS_COMPTE);
+                updateCompteStatusStatement.setString(1, compteCourant.getEtat().name());
+                updateCompteStatusStatement.setString(2, compteCourant.getNumero());
+
+                int rowsUpdated = updateCompteStatusStatement.executeUpdate();
+                if (rowsUpdated > 0) {
+                    return compteCourant;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return null;
     }
+
 
 
 
 
     @Override
     public List<Compte> ShowList() {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(LIST_COMPTE);
+            ResultSet resultSet = preparedStatement.executeQuery();
 
+            while (resultSet.next()){
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                EtatCompte etat = EtatCompte.valueOf(etatStr);
+                double decouvert = resultSet.getDouble("decouvert");
 
-        return null;
+                Compte compte = new CompteCourant(numero, sold, dateCreation, etat, null, null, null, decouvert);
+
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
 
+
     public static Compte GetByNumero(String numero) {
-              return null;
+        Connection connection = DatabaseConnection.getConn();
+        Compte compte = null;
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(GET_COMPTE_BYNUMBER);
+            preparedStatement.setString(1, numero);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                String fetchedNumero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                EtatCompte etat = EtatCompte.valueOf(etatStr);
+
+                compte = new CompteCourant(fetchedNumero, sold, dateCreation, etat, null, null, null, 0.0);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compte;
     }
 
 
 
     @Override
     public Compte Update(Compte compte) {
+        if (compte instanceof CompteCourant compteCourant) {
+            Connection connection = DatabaseConnection.getConn();
 
+            try {
+
+                PreparedStatement updateCompteStatement = connection.prepareStatement(UPDATE_COMPTE);
+                updateCompteStatement.setDouble(1, compteCourant.getSold());
+                updateCompteStatement.setDate(2, new java.sql.Date(compteCourant.getDateCreation().getTime()));
+                updateCompteStatement.setString(3, compteCourant.getEtat().name());
+                updateCompteStatement.setString(4, compteCourant.getClient().getCode());
+                updateCompteStatement.setString(5, compteCourant.getEmploye().getMatricule());
+                updateCompteStatement.setString(6, compteCourant.getNumero());
+
+                int rowsUpdated = updateCompteStatement.executeUpdate();
+                if (rowsUpdated > 0) {
+                    return compteCourant;
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return null;
     }
 
     @Override
     public List<Compte> SearchByOperation(Operation operation) {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        return null;
+        try {
+            String searchByOperationQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, cc.decouvert " +
+                    "FROM Comptes c " +
+                    "LEFT JOIN ComptesCourants cc ON c.numero = cc.numeroCompte " +
+                    "INNER JOIN Operations ao ON c.numero = ao.compte_numero " +
+                    "WHERE ao.type = ?";
+
+            PreparedStatement preparedStatement = connection.prepareStatement(searchByOperationQuery);
+
+            preparedStatement.setString(1, operation.getType().name());
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                double decouvert = resultSet.getDouble("decouvert");
+
+                Compte compte = new CompteCourant(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, decouvert);
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
-
 
     @Override
     public List<Compte> FilterByStatus(EtatCompte etat) {
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        return null;
+        try {
+            String filterByStatusQuery = "SELECT * FROM Comptes WHERE etat = ? ORDER BY etat DESC";
+            PreparedStatement preparedStatement = connection.prepareStatement(filterByStatusQuery);
+            preparedStatement.setString(1, etat.name());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date dateCreation = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+
+                Compte compte = new CompteCourant(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, 0.0);
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
-
 
 
 
     @Override
     public List<Compte> FilterByDCreation(Date dateCreation) {
-        return null;
+        List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+
+            String filterByDCreationQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, cc.decouvert " + "FROM Comptes c " + "LEFT JOIN ComptesCourants cc ON c.numero = cc.numeroCompte " + "WHERE c.dateCreation = ?";
+
+            PreparedStatement preparedStatement = connection.prepareStatement(filterByDCreationQuery);
+            preparedStatement.setDate(1, new java.sql.Date(dateCreation.getTime()));
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                String numero = resultSet.getString("numero");
+                double sold = resultSet.getDouble("sold");
+                Date creationDate = resultSet.getDate("dateCreation");
+                String etatStr = resultSet.getString("etat");
+                double decouvert = resultSet.getDouble("decouvert");
+
+                Compte compte = new CompteCourant(numero, sold, creationDate, EtatCompte.valueOf(etatStr), null, null, null, decouvert);
+                compteList.add(compte);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return compteList;
     }
 
 
