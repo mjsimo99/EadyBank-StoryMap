@@ -34,6 +34,15 @@ public class AffectationImpl implements Iaffectation {
 
     @Override
     public boolean DeleteAffectation(Affectation affectation) {
-        return false;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_AFFECTATION)) {
+            preparedStatement.setString(1, affectation.getEmploye().getMatricule());
+            preparedStatement.setString(2, affectation.getMission().getCode());
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
     }
 }
