@@ -60,21 +60,75 @@ public class ClientImpl implements Iclient {
     }
     @Override
     public List<Client> Showlist() {
-
-        return null;
+        List<Client> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_CLIENTS)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Client client = new Client(
+                        resultSet.getString("code"),
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        null
+                );
+                resultList.add(client);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
     public List<Client> SearchByPrenom(String prenom) {
-
-        return null;
+        List<Client> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_PRENOM)) {
+            preparedStatement.setString(1, prenom);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Client client = new Client(
+                        resultSet.getString("code"),
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        null // List<Compte> comptes is not retrieved from the database in this example
+                );
+                resultList.add(client);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
     }
 
     @Override
     public Client Update(Client client) {
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_CLIENT)) {
+            preparedStatement.setString(1, client.getNom());
+            preparedStatement.setString(2, client.getPrenom());
+            preparedStatement.setDate(3, new java.sql.Date(client.getDateN().getTime()));
+            preparedStatement.setString(4, client.getTel());
+            preparedStatement.setString(5, client.getAdress());
+            preparedStatement.setString(6, client.getCode());
 
-        return client;
+            int rowsUpdated = preparedStatement.executeUpdate();
+            if (rowsUpdated > 0) {
+                return client;
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
     @Override
     public Personne Add(Personne personne) {

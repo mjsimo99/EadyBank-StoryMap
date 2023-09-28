@@ -23,30 +23,6 @@ public class EmployeImpl implements Iemploye {
     private static final String UPDATE_EMPLOYE = "UPDATE Employes SET dateRecrutement=?, emailAdresse=?, nom=?, prenom=?, dateN=?, tel=?, adress=? WHERE matricule=?";
 
 
-    @Override
-    public List<Employe> SearchByMatricule(String matricule) {
-        return null;
-    }
-
-    @Override
-    public boolean Delete(String marticule) {
-        return false;
-    }
-
-    @Override
-    public List<Employe> ShowList() {
-        return null;
-    }
-
-    @Override
-    public List<Employe> SearchByDateR(Date dateRecrutement) {
-        return null;
-    }
-
-    @Override
-    public Employe Update(Employe employe) {
-        return null;
-    }
 
     @Override
     public Personne Add(Personne personne) {
@@ -70,4 +46,156 @@ public class EmployeImpl implements Iemploye {
         }
         return personne;
     }
+    @Override
+    public List<Employe> SearchByMatricule(String matricule) {
+        List<Employe> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_MATRICULE)) {
+            preparedStatement.setString(1, matricule);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Employe employe = new Employe(
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        resultSet.getString("matricule"),
+                        resultSet.getDate("dateRecrutement"),
+                        resultSet.getString("emailAdresse"),
+                        null,
+                        null,
+                        null
+                );
+                resultList.add(employe);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
+    }
+
+    @Override
+    public boolean Delete(String matricule) {
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_EMPLOYE)) {
+            preparedStatement.setString(1, matricule);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<Employe> ShowList() {
+        List<Employe> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_EMPLOYEES)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Employe employe = new Employe(
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        resultSet.getString("matricule"),
+                        resultSet.getDate("dateRecrutement"),
+                        resultSet.getString("emailAdresse"),
+                        null,
+                        null,
+                        null
+                );
+                resultList.add(employe);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
+    }
+
+    @Override
+    public List<Employe> SearchByDateR(Date dateRecrutement) {
+        List<Employe> resultList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_DATE_RECRUTEMENT)) {
+            preparedStatement.setDate(1, new java.sql.Date(dateRecrutement.getTime()));
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Employe employe = new Employe(
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        resultSet.getString("matricule"),
+                        resultSet.getDate("dateRecrutement"),
+                        resultSet.getString("emailAdresse"),
+                        null,
+                        null,
+                        null
+                );
+                resultList.add(employe);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return resultList;
+    }
+
+    @Override
+    public Employe Update(Employe employe) {
+        Connection connection = DatabaseConnection.getConn();
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_EMPLOYE)) {
+            preparedStatement.setDate(1, new java.sql.Date(employe.getDateRecrutement().getTime()));
+            preparedStatement.setString(2, employe.getEmailAdresse());
+            preparedStatement.setString(3, employe.getNom());
+            preparedStatement.setString(4, employe.getPrenom());
+            preparedStatement.setDate(5, new java.sql.Date(employe.getDateN().getTime()));
+            preparedStatement.setString(6, employe.getTel());
+            preparedStatement.setString(7, employe.getAdress());
+            preparedStatement.setString(8, employe.getMatricule());
+
+            int rowsUpdated = preparedStatement.executeUpdate();
+            if (rowsUpdated > 0) {
+                return employe;
+            } else {
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public Employe getEmployeById(String matricule) {
+        Connection connection = DatabaseConnection.getConn();
+        String SELECT_EMPLOYE_BY_MATRICULE = "SELECT * FROM Employes WHERE matricule = ?";
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SELECT_EMPLOYE_BY_MATRICULE)) {
+            preparedStatement.setString(1, matricule);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                return new Employe(
+                        resultSet.getString("nom"),
+                        resultSet.getString("prenom"),
+                        resultSet.getDate("dateN"),
+                        resultSet.getString("tel"),
+                        resultSet.getString("adress"),
+                        resultSet.getString("matricule"),
+                        resultSet.getDate("dateRecrutement"),
+                        resultSet.getString("emailAdresse"),
+                        null,
+                        null,
+                        null
+                );
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return null;
+    }
+
 }

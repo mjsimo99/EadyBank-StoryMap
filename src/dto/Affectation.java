@@ -13,6 +13,8 @@ public class Affectation {
         setDescription(description);
     }
 
+
+
     public Employe getEmploye() {
         return employe;
     }

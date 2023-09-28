@@ -546,22 +546,37 @@ public class Main {
             System.out.println("1. Create New Affectation");
             System.out.println("2. Delete Affectation");
             System.out.println("3. Show All Affectations");
-            System.out.println("4. Back to Main Menu");
+            System.out.println("4. Show Assignment History by Matricule");
+            System.out.println("5. Back to Main Menu");
 
-            System.out.print("Enter your choice (1-4): ");
+            System.out.print("Enter your choice (1-5): ");
             int choice = scanner.nextInt();
             scanner.nextLine();
 
             switch (choice) {
                 case 1 -> createNewAffectation(scanner, affectationService, employeService, missionService);
                 case 2 -> deleteAffectation(scanner, affectationService, employeService, missionService);
-                case 3 -> {
+                case 3 -> getAffectationStatistics(affectationService);
+                case 4 -> showAssignmentHistoryByMatricule(scanner, affectationService);
+                case 5 -> {
                     return;
                 }
-                default -> System.out.println("Invalid choice. Please enter a number between 1 and 4.");
+                default -> System.out.println("Invalid choice. Please enter a number between 1 and 5.");
             }
         }
     }
+   public static void getAffectationStatistics(Iaffectation affectationService){
+       int[] statistics = affectationService.getAffectationStatistics();
+       int totalAffectations = statistics[0];
+       int totalEmployees = statistics[1];
+       int totalMissions = statistics[2];
+
+       System.out.println("Total Affectations: " + totalAffectations);
+       System.out.println("Total Employees: " + totalEmployees);
+       System.out.println("Total Missions: " + totalMissions);
+   }
+
+
 
     private static void createNewAffectation(Scanner scanner, Iaffectation affectationService, Iemploye employeService, Imission missionService) {
         System.out.print("Enter Employee Matricule: ");
@@ -635,6 +650,29 @@ public class Main {
             System.out.println("Failed to delete affectation.");
         }
     }
+    private static void showAssignmentHistoryByMatricule(Scanner scanner, Iaffectation affectationService) {
+        System.out.print("Enter Employee Matricule: ");
+        String employeeMatricule = scanner.nextLine();
+
+        List<Affectation> assignmentHistory = affectationService.getAssignmentHistoryByMatricule(employeeMatricule);
+
+        if (assignmentHistory.isEmpty()) {
+            System.out.println("No assignment history found for employee with Matricule '" + employeeMatricule + "'.");
+        } else {
+            System.out.println("Assignment History for Employee with Matricule '" + employeeMatricule + "':");
+            for (Affectation affectation : assignmentHistory) {
+                Employe employee = affectation.getEmploye();
+                Mission mission = affectation.getMission();
+                System.out.println("Mission Code: " + mission.getCode());
+                System.out.println("Mission Name: " + mission.getNome());
+                System.out.println("Assignment Name: " + affectation.getNom());
+                System.out.println("Assignment Description: " + affectation.getDescription());
+                System.out.println("Employee Name: " + employee.getNom() + " " + employee.getPrenom());
+                System.out.println("------------------------------------------------");
+            }
+        }
+    }
+
 
     private static void operationManagement(Scanner scanner, Ioperation operationService) {
 
