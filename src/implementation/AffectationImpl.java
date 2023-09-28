@@ -15,7 +15,20 @@ public class AffectationImpl implements Iaffectation {
 
     @Override
     public Affectation CreateNewAffectation(Affectation affectation) {
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(INSERT_AFFECTATION)) {
+            preparedStatement.setString(1, affectation.getEmploye().getMatricule());
+            preparedStatement.setString(2, affectation.getMission().getCode());
+            preparedStatement.setString(3, affectation.getNom());
+            preparedStatement.setString(4, affectation.getDescription());
 
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Creating affectation failed, no rows affected.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         return affectation;
     }
 
