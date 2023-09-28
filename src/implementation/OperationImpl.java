@@ -24,7 +24,6 @@ public class OperationImpl implements Ioperation {
     public Compte getCompteByNumero(String numero) {
         Connection connection = DatabaseConnection.getConn();
         try {
-            // First, check in ComptesCourants table
             String queryCourant = "SELECT * FROM ComptesCourants WHERE numeroCompte = ?";
             PreparedStatement preparedStatementCourant = connection.prepareStatement(GET_COMPTE_COYRANT);
             preparedStatementCourant.setString(1, numero);
@@ -97,7 +96,20 @@ public class OperationImpl implements Ioperation {
 
     @Override
     public Operation Add(Operation operation) {
-        return null;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_OPERATION)) {
+            preparedStatement.setString(1, operation.getNumero());
+            preparedStatement.setDate(2, new java.sql.Date(operation.getDateCreation().getTime()));
+            preparedStatement.setDouble(3, operation.getMontant());
+            preparedStatement.setString(4, operation.getType().toString());
+            preparedStatement.setString(5, operation.getEmploye().getMatricule());
+            preparedStatement.setString(6, operation.getCompte().getNumero());
+
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return operation;
     }
 
     @Override
