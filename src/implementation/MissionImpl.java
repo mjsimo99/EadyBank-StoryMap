@@ -36,8 +36,16 @@ public class MissionImpl implements Imission {
 
     @Override
     public boolean Delete(String code) {
-        return false;
+        Connection connection = DatabaseConnection.getConn();
+        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_MISSION)) {
+            preparedStatement.setString(1, code);
+            int rowsDeleted = preparedStatement.executeUpdate();
+            return rowsDeleted > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
     @Override
     public List<Mission> ShowList() {
