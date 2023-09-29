@@ -7,16 +7,17 @@ import dto.Operation;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface Icompte {
-    Compte Add(Compte compte);
+    Optional<Compte> Add(Compte compte);
     List<Compte> SearchByClient(Client client);
     boolean Delete(String numero);
-    Compte UpdateStatus(Compte compte);
+    Optional<Compte> UpdateStatus(Compte compte);
     List<Compte> FilterByStatus(EtatCompte etat);
     List<Compte> ShowList();
     List<Compte> FilterByDCreation(Date dateCreation);
-    Compte Update(Compte compte);
+    Optional<Compte> Update(Compte compte);
     List<Compte> SearchByOperation(Operation operation);
 
 

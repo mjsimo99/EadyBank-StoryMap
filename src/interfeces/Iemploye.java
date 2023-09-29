@@ -4,12 +4,13 @@ import dto.Employe;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface Iemploye extends Ipersonne {
-    List<Employe> SearchByMatricule(String matricule);
+    Optional<List<Employe>> SearchByMatricule(String matricule);
     boolean Delete(String marticule);
-    List<Employe> ShowList();
-    List<Employe> SearchByDateR(Date dateRecrutement);
-    Employe Update(Employe employe);
+    Optional<List<Employe>> ShowList();
+    Optional<List<Employe>> SearchByDateR(Date dateRecrutement);
+    Optional<Employe> Update(Employe employe);
 
 }

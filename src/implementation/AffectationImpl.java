@@ -10,19 +10,17 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class AffectationImpl implements Iaffectation {
     private static final String INSERT_AFFECTATION = "INSERT INTO Affectations (employe_matricule, mission_code, nom, description) VALUES (?, ?, ?, ?)";
     private static final String DELETE_AFFECTATION = "DELETE FROM Affectations WHERE employe_matricule = ? AND mission_code = ?";
+    private static final String SELECT_AFFECTATIONS_BY_MATRICULE = "SELECT * FROM Affectations WHERE employe_matricule = ?";
 
-    private static final String SELECT_AFFECTATIONS_BY_MATRICULE =
-            "SELECT * FROM Affectations WHERE employe_matricule = ?";
     @Override
-    public Affectation CreateNewAffectation(Affectation affectation) {
-        Connection connection = DatabaseConnection.getConn();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(INSERT_AFFECTATION)) {
+    public Optional<Affectation> createNewAffectation(Affectation affectation) {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(INSERT_AFFECTATION)) {
             preparedStatement.setString(1, affectation.getEmploye().getMatricule());
             preparedStatement.setString(2, affectation.getMission().getCode());
             preparedStatement.setString(3, affectation.getNom());
@@ -30,18 +28,18 @@ public class AffectationImpl implements Iaffectation {
 
             int affectedRows = preparedStatement.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Creating affectation failed, no rows affected.");
+                return Optional.empty();
             }
+            return Optional.of(affectation);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return affectation;
     }
 
     @Override
     public boolean DeleteAffectation(Affectation affectation) {
-        Connection connection = DatabaseConnection.getConn();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_AFFECTATION)) {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_AFFECTATION)) {
             preparedStatement.setString(1, affectation.getEmploye().getMatricule());
             preparedStatement.setString(2, affectation.getMission().getCode());
             int rowsDeleted = preparedStatement.executeUpdate();
@@ -50,12 +48,12 @@ public class AffectationImpl implements Iaffectation {
             throw new RuntimeException(e);
         }
     }
+
     @Override
     public List<Affectation> getAssignmentHistoryByMatricule(String matricule) {
         List<Affectation> assignmentHistory = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
-
-        try (PreparedStatement preparedStatement = connection.prepareStatement(SELECT_AFFECTATIONS_BY_MATRICULE)) {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(SELECT_AFFECTATIONS_BY_MATRICULE)) {
             preparedStatement.setString(1, matricule);
             ResultSet resultSet = preparedStatement.executeQuery();
 
@@ -66,7 +64,7 @@ public class AffectationImpl implements Iaffectation {
 
                 Employe employe = new EmployeImpl().getEmployeById(matricule);
 
-                Mission mission = new MissionImpl().getCodeMission(missionCode);
+                Mission mission = new MissionImpl().getCodeMission(missionCode).orElse(null);
 
                 Affectation affectation = new Affectation(employe, mission, nom, description);
                 assignmentHistory.add(affectation);
@@ -77,9 +75,9 @@ public class AffectationImpl implements Iaffectation {
 
         return assignmentHistory;
     }
-    @Override
-    public int[] getAffectationStatistics() {
 
+    @Override
+    public HashMap<String, Integer> getAffectationStatistics() {
         Connection connection = DatabaseConnection.getConn();
         String sqlTotalAffectations = "SELECT COUNT(*) AS TotalAffectations FROM Affectations";
         String sqlTotalEmployees = "SELECT COUNT(DISTINCT employe_matricule) AS TotalEmployees FROM Affectations";
@@ -93,19 +91,22 @@ public class AffectationImpl implements Iaffectation {
             ResultSet resultSetTotalEmployees = preparedStatementTotalEmployees.executeQuery();
             ResultSet resultSetTotalMissions = preparedStatementTotalMissions.executeQuery();
 
-            int totalAffectations = resultSetTotalAffectations.next() ? resultSetTotalAffectations.getInt("TotalAffectations") : 0;
-            int totalEmployees = resultSetTotalEmployees.next() ? resultSetTotalEmployees.getInt("TotalEmployees") : 0;
-            int totalMissions = resultSetTotalMissions.next() ? resultSetTotalMissions.getInt("TotalMissions") : 0;
+            HashMap<String, Integer> statistics = new HashMap<>();
 
-            return new int[] { totalAffectations, totalEmployees, totalMissions };
+            statistics.put("TotalAffectations", resultSetTotalAffectations.next() ? resultSetTotalAffectations.getInt("TotalAffectations") : 0);
+            statistics.put("TotalEmployees", resultSetTotalEmployees.next() ? resultSetTotalEmployees.getInt("TotalEmployees") : 0);
+            statistics.put("TotalMissions", resultSetTotalMissions.next() ? resultSetTotalMissions.getInt("TotalMissions") : 0);
+
+            return statistics;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
-
-
-
-
-
-
 }
+
+
+
+
+
+
+

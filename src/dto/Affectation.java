@@ -52,7 +52,7 @@ public class Affectation {
     @Override
     public String toString() {
         return "Affectation{" +
-                "employe=" + employe +
+                "employee=" + employe +
                 ", mission=" + mission +
                 ", nom='" + nom + '\'' +
                 ", description='" + description + '\'' +

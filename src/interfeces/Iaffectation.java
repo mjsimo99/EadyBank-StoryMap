@@ -1,14 +1,18 @@
 package interfeces;
 
 import dto.Affectation;
-import dto.Employe;
-import dto.Mission;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public interface Iaffectation {
-    Affectation CreateNewAffectation(Affectation affectation);
+    Optional<Affectation> createNewAffectation(Affectation affectation);
+
     boolean DeleteAffectation(Affectation affectation);
+
     List<Affectation> getAssignmentHistoryByMatricule(String matricule);
-    int[] getAffectationStatistics();
+
+    HashMap<String, Integer> getAffectationStatistics();
 }

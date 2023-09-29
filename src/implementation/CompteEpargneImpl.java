@@ -15,12 +15,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public class CompteEpargneImpl implements Icompte {
-    private static final String ADD_COMPTE_EPARGNE = "INSERT INTO Comptes (numero, sold, dateCreation, etat, client_code, employe_matricule) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String ADD_COMPTE_EPARGNE_TABLE = "INSERT INTO ComptesEpargnes (numeroCompte, tauxInteret) VALUES (?, ?)";
-    private static final String SEARCH_BY_CLIENT = "SELECT * FROM Comptes WHERE client_code = ?";
-    private static final String SEARCH_BY_CLIENT_TAUX = "SELECT tauxInteret FROM ComptesEpargnes WHERE numeroCompte = ?";
+    private static final String INSERT_COMPTE_EPARGNE = "INSERT INTO Comptes (numero, sold, dateCreation, etat, client_code, employe_matricule) VALUES (?, ?, ?, ?, ?, ?)";
+    private static final String INSERT_COMPTE_EPARGNE_TABLE = "INSERT INTO ComptesEpargnes (numeroCompte, tauxInteret) VALUES (?, ?)";
     private static final String DELETE_COMPTE = "DELETE FROM Comptes WHERE numero = ?";
     private static final String UPDATE_STATUS_COMPTE = "UPDATE Comptes SET etat = ? WHERE numero = ?";
     private static final String LIST_COMPTE = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
@@ -30,16 +29,24 @@ public class CompteEpargneImpl implements Icompte {
             "SET sold = ?, dateCreation = ?, etat = ?, client_code = ?, employe_matricule = ? " +
             "WHERE numero = ?";
     private static final String GET_COMPTE_BY_NUMBER = "SELECT * FROM Comptes WHERE numero = ?";
-
-
-
+    private static final String SEARCH_BY_CLIENT = "SELECT * FROM Comptes WHERE client_code = ?";
+    private static final String SEARCH_BY_CLIENT_TAUX = "SELECT tauxInteret FROM ComptesEpargnes WHERE numeroCompte = ?";
+    private static final String SEARCH_BY_OPERATION = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
+            "FROM Comptes c " +
+            "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
+            "INNER JOIN Operations ao ON c.numero = ao.compte_numero " +
+            "WHERE ao.type = ?";
+    private static final String FILTER_BY_STATUS = "SELECT * FROM Comptes WHERE etat = ? ORDER BY etat DESC";
+    private static final String FILTER_BY_DATE_CREATION = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
+            "FROM Comptes c " +
+            "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
+            "WHERE c.dateCreation = ?";
 
     public static Compte GetByNumero(String numero) {
         Connection connection = DatabaseConnection.getConn();
         Compte compte = null;
 
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(GET_COMPTE_BY_NUMBER);
+        try (PreparedStatement preparedStatement = connection.prepareStatement(GET_COMPTE_BY_NUMBER)) {
             preparedStatement.setString(1, numero);
             ResultSet resultSet = preparedStatement.executeQuery();
 
@@ -59,65 +66,68 @@ public class CompteEpargneImpl implements Icompte {
     }
 
     @Override
-    public Compte Add(Compte compte) {
+    public Optional<Compte> Add(Compte compte) {
         if (compte instanceof CompteEpargne compteEpargne) {
-            Connection connection = DatabaseConnection.getConn();
+            try (Connection connection = DatabaseConnection.getConn()) {
+                try (PreparedStatement preparedStatement = connection.prepareStatement(INSERT_COMPTE_EPARGNE)) {
+                    preparedStatement.setString(1, compteEpargne.getNumero());
+                    preparedStatement.setDouble(2, compteEpargne.getSold());
+                    preparedStatement.setDate(3, new java.sql.Date(compteEpargne.getDateCreation().getTime()));
+                    preparedStatement.setString(4, compteEpargne.getEtat().name());
+                    preparedStatement.setString(5, compteEpargne.getClient().getCode());
+                    preparedStatement.setString(6, compteEpargne.getEmploye().getMatricule());
 
-            try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_COMPTE_EPARGNE)) {
-                preparedStatement.setString(1, compteEpargne.getNumero());
-                preparedStatement.setDouble(2, compteEpargne.getSold());
-                preparedStatement.setDate(3, new java.sql.Date(compteEpargne.getDateCreation().getTime()));
-                preparedStatement.setString(4, compteEpargne.getEtat().name());
-                preparedStatement.setString(5, compteEpargne.getClient().getCode());
-                preparedStatement.setString(6, compteEpargne.getEmploye().getMatricule());
+                    int rowsInserted = preparedStatement.executeUpdate();
+                    if (rowsInserted > 0) {
+                        try (PreparedStatement compteEpargneStatement = connection.prepareStatement(INSERT_COMPTE_EPARGNE_TABLE)) {
+                            compteEpargneStatement.setString(1, compteEpargne.getNumero());
+                            compteEpargneStatement.setDouble(2, compteEpargne.getTauxInteret());
+                            compteEpargneStatement.executeUpdate();
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
 
-                int rowsInserted = preparedStatement.executeUpdate();
-                if (rowsInserted > 0) {
-                    try (PreparedStatement compteEpargneStatement = connection.prepareStatement(ADD_COMPTE_EPARGNE_TABLE)) {
-                        compteEpargneStatement.setString(1, compteEpargne.getNumero());
-                        compteEpargneStatement.setDouble(2, compteEpargne.getTauxInteret());
-                        compteEpargneStatement.executeUpdate();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
+                        return Optional.of(compteEpargne);
                     }
-
-                    return compteEpargne;
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     @Override
     public List<Compte> SearchByClient(Client client) {
         List<Compte> compteList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
 
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CLIENT);
-            preparedStatement.setString(1, client.getCode());
-            ResultSet resultSet = preparedStatement.executeQuery();
+        try (Connection connection = DatabaseConnection.getConn()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CLIENT)) {
+                preparedStatement.setString(1, client.getCode());
+                ResultSet resultSet = preparedStatement.executeQuery();
 
-            while (resultSet.next()) {
-                String numero = resultSet.getString("numero");
-                double sold = resultSet.getDouble("sold");
-                Date dateCreation = resultSet.getDate("dateCreation");
-                String etatStr = resultSet.getString("etat");
-                EtatCompte etat = EtatCompte.valueOf(etatStr);
+                while (resultSet.next()) {
+                    String numero = resultSet.getString("numero");
+                    double sold = resultSet.getDouble("sold");
+                    Date dateCreation = resultSet.getDate("dateCreation");
+                    String etatStr = resultSet.getString("etat");
+                    EtatCompte etat = EtatCompte.valueOf(etatStr);
 
-                PreparedStatement tauxStatement = connection.prepareStatement(SEARCH_BY_CLIENT_TAUX);
-                tauxStatement.setString(1, numero);
-                ResultSet tauxResultSet = tauxStatement.executeQuery();
-                double tauxInteret = 0.0;
+                    try (PreparedStatement tauxStatement = connection.prepareStatement(SEARCH_BY_CLIENT_TAUX)) {
+                        tauxStatement.setString(1, numero);
+                        ResultSet tauxResultSet = tauxStatement.executeQuery();
+                        double tauxInteret = 0.0;
 
-                if (tauxResultSet.next()) {
-                    tauxInteret = tauxResultSet.getDouble("tauxInteret");
+                        if (tauxResultSet.next()) {
+                            tauxInteret = tauxResultSet.getDouble("tauxInteret");
+                        }
+
+                        CompteEpargne compteEpargne = new CompteEpargne(numero, sold, dateCreation, etat, client, null, null, tauxInteret);
+                        compteList.add(compteEpargne);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
-
-                CompteEpargne compteEpargne = new CompteEpargne(numero, sold, dateCreation, etat, client, null, null, tauxInteret);
-                compteList.add(compteEpargne);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -128,64 +138,57 @@ public class CompteEpargneImpl implements Icompte {
 
     @Override
     public boolean Delete(String numero) {
-        Connection connection = DatabaseConnection.getConn();
+        try (Connection connection = DatabaseConnection.getConn()) {
+            try (PreparedStatement deleteComptesStatement = connection.prepareStatement(DELETE_COMPTE)) {
+                deleteComptesStatement.setString(1, numero);
+                int rowsDeleted = deleteComptesStatement.executeUpdate();
 
-        try {
-            PreparedStatement deleteComptesStatement = connection.prepareStatement(DELETE_COMPTE);
-            deleteComptesStatement.setString(1, numero);
-            int rowsDeleted = deleteComptesStatement.executeUpdate();
-
-            return rowsDeleted > 0;
+                return rowsDeleted > 0;
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Compte UpdateStatus(Compte compte) {
+    public Optional<Compte> UpdateStatus(Compte compte) {
         if (compte instanceof CompteEpargne compteEpargne) {
-            Connection connection = DatabaseConnection.getConn();
+            try (Connection connection = DatabaseConnection.getConn()) {
+                try (PreparedStatement updateCompteStatusStatement = connection.prepareStatement(UPDATE_STATUS_COMPTE)) {
+                    updateCompteStatusStatement.setString(1, compteEpargne.getEtat().name());
+                    updateCompteStatusStatement.setString(2, compteEpargne.getNumero());
 
-            try {
-                PreparedStatement updateCompteStatusStatement = connection.prepareStatement(UPDATE_STATUS_COMPTE);
-                updateCompteStatusStatement.setString(1, compteEpargne.getEtat().name());
-                updateCompteStatusStatement.setString(2, compteEpargne.getNumero());
-
-                int rowsUpdated = updateCompteStatusStatement.executeUpdate();
-                if (rowsUpdated > 0) {
-                    return compteEpargne;
+                    int rowsUpdated = updateCompteStatusStatement.executeUpdate();
+                    if (rowsUpdated > 0) {
+                        return Optional.of(compteEpargne);
+                    }
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     @Override
     public List<Compte> FilterByStatus(EtatCompte etat) {
         List<Compte> compteList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
 
-        try {
-            String filterByStatusQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
-                    "FROM Comptes c " +
-                    "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
-                    "WHERE c.etat = ? ORDER BY c.etat DESC";
+        try (Connection connection = DatabaseConnection.getConn()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(FILTER_BY_STATUS)) {
+                preparedStatement.setString(1, etat.name());
+                ResultSet resultSet = preparedStatement.executeQuery();
 
-            PreparedStatement preparedStatement = connection.prepareStatement(filterByStatusQuery);
-            preparedStatement.setString(1, etat.name());
-            ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    String numero = resultSet.getString("numero");
+                    double sold = resultSet.getDouble("sold");
+                    Date dateCreation = resultSet.getDate("dateCreation");
+                    String etatStr = resultSet.getString("etat");
+                    double tauxInteret = resultSet.getDouble("tauxInteret");
 
-            while (resultSet.next()) {
-                String numero = resultSet.getString("numero");
-                double sold = resultSet.getDouble("sold");
-                Date dateCreation = resultSet.getDate("dateCreation");
-                String etatStr = resultSet.getString("etat");
-                double tauxInteret = resultSet.getDouble("tauxInteret");
-
-                Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
-                compteList.add(compte);
+                    Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
+                    compteList.add(compte);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -197,20 +200,21 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public List<Compte> ShowList() {
         List<Compte> compteList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(LIST_COMPTE);
-            ResultSet resultSet = preparedStatement.executeQuery();
 
-            while (resultSet.next()) {
-                String numero = resultSet.getString("numero");
-                double sold = resultSet.getDouble("sold");
-                Date dateCreation = resultSet.getDate("dateCreation");
-                String etatStr = resultSet.getString("etat");
-                double tauxInteret = resultSet.getDouble("tauxInteret");
+        try (Connection connection = DatabaseConnection.getConn()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(LIST_COMPTE)) {
+                ResultSet resultSet = preparedStatement.executeQuery();
 
-                Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
-                compteList.add(compte);
+                while (resultSet.next()) {
+                    String numero = resultSet.getString("numero");
+                    double sold = resultSet.getDouble("sold");
+                    Date dateCreation = resultSet.getDate("dateCreation");
+                    String etatStr = resultSet.getString("etat");
+                    double tauxInteret = resultSet.getDouble("tauxInteret");
+
+                    Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
+                    compteList.add(compte);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -222,28 +226,22 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public List<Compte> FilterByDCreation(Date dateCreation) {
         List<Compte> compteList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
 
-        try {
-            String filterByDCreationQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
-                    "FROM Comptes c " +
-                    "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
-                    "WHERE c.dateCreation = ?";
+        try (Connection connection = DatabaseConnection.getConn()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(FILTER_BY_DATE_CREATION)) {
+                preparedStatement.setDate(1, new java.sql.Date(dateCreation.getTime()));
+                ResultSet resultSet = preparedStatement.executeQuery();
 
-            PreparedStatement preparedStatement = connection.prepareStatement(filterByDCreationQuery);
-            preparedStatement.setDate(1, new java.sql.Date(dateCreation.getTime()));
+                while (resultSet.next()) {
+                    String numero = resultSet.getString("numero");
+                    double sold = resultSet.getDouble("sold");
+                    Date creationDate = resultSet.getDate("dateCreation");
+                    String etatStr = resultSet.getString("etat");
+                    double tauxInteret = resultSet.getDouble("tauxInteret");
 
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            while (resultSet.next()) {
-                String numero = resultSet.getString("numero");
-                double sold = resultSet.getDouble("sold");
-                Date creationDate = resultSet.getDate("dateCreation");
-                String etatStr = resultSet.getString("etat");
-                double tauxInteret = resultSet.getDouble("tauxInteret");
-
-                Compte compte = new CompteEpargne(numero, sold, creationDate, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
-                compteList.add(compte);
+                    Compte compte = new CompteEpargne(numero, sold, creationDate, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
+                    compteList.add(compte);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -253,57 +251,48 @@ public class CompteEpargneImpl implements Icompte {
     }
 
     @Override
-    public Compte Update(Compte compte) {
+    public Optional<Compte> Update(Compte compte) {
         if (compte instanceof CompteEpargne compteEpargne) {
-            Connection connection = DatabaseConnection.getConn();
+            try (Connection connection = DatabaseConnection.getConn()) {
+                try (PreparedStatement updateCompteStatement = connection.prepareStatement(UPDATE_COMPTE)) {
+                    updateCompteStatement.setDouble(1, compteEpargne.getSold());
+                    updateCompteStatement.setDate(2, new java.sql.Date(compteEpargne.getDateCreation().getTime()));
+                    updateCompteStatement.setString(3, compteEpargne.getEtat().name());
+                    updateCompteStatement.setString(4, compteEpargne.getClient().getCode());
+                    updateCompteStatement.setString(5, compteEpargne.getEmploye().getMatricule());
+                    updateCompteStatement.setString(6, compteEpargne.getNumero());
 
-            try {
-                PreparedStatement updateCompteStatement = connection.prepareStatement(UPDATE_COMPTE);
-                updateCompteStatement.setDouble(1, compteEpargne.getSold());
-                updateCompteStatement.setDate(2, new java.sql.Date(compteEpargne.getDateCreation().getTime()));
-                updateCompteStatement.setString(3, compteEpargne.getEtat().name());
-                updateCompteStatement.setString(4, compteEpargne.getClient().getCode());
-                updateCompteStatement.setString(5, compteEpargne.getEmploye().getMatricule());
-                updateCompteStatement.setString(6, compteEpargne.getNumero());
-
-                int rowsUpdated = updateCompteStatement.executeUpdate();
-                if (rowsUpdated > 0) {
-                    return compteEpargne;
+                    int rowsUpdated = updateCompteStatement.executeUpdate();
+                    if (rowsUpdated > 0) {
+                        return Optional.of(compteEpargne);
+                    }
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     @Override
     public List<Compte> SearchByOperation(Operation operation) {
         List<Compte> compteList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
 
-        try {
-            String searchByOperationQuery = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
-                    "FROM Comptes c " +
-                    "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
-                    "INNER JOIN Operations ao ON c.numero = ao.compte_numero " +
-                    "WHERE ao.type = ?";
+        try (Connection connection = DatabaseConnection.getConn()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_OPERATION)) {
+                preparedStatement.setString(1, operation.getType().name());
+                ResultSet resultSet = preparedStatement.executeQuery();
 
-            PreparedStatement preparedStatement = connection.prepareStatement(searchByOperationQuery);
+                while (resultSet.next()) {
+                    String numero = resultSet.getString("numero");
+                    double sold = resultSet.getDouble("sold");
+                    Date dateCreation = resultSet.getDate("dateCreation");
+                    String etatStr = resultSet.getString("etat");
+                    double tauxInteret = resultSet.getDouble("tauxInteret");
 
-            preparedStatement.setString(1, operation.getType().name());
-
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            while (resultSet.next()) {
-                String numero = resultSet.getString("numero");
-                double sold = resultSet.getDouble("sold");
-                Date dateCreation = resultSet.getDate("dateCreation");
-                String etatStr = resultSet.getString("etat");
-                double tauxInteret = resultSet.getDouble("tauxInteret");
-
-                Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
-                compteList.add(compte);
+                    Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
+                    compteList.add(compte);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

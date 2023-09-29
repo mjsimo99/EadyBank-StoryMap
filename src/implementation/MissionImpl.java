@@ -10,17 +10,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class MissionImpl implements Imission {
+
 
     private static final String ADD_MISSION = "INSERT INTO Missions (code, nom, description) VALUES (?, ?, ?)";
     private static final String DELETE_MISSION = "DELETE FROM Missions WHERE code=?";
     private static final String SHOW_ALL_MISSIONS = "SELECT * FROM Missions";
 
-
     @Override
-    public Mission Add(Mission mission) {
+    public Optional<Mission> Add(Mission mission) {
         Connection connection = DatabaseConnection.getConn();
+
         try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_MISSION)) {
             preparedStatement.setString(1, mission.getCode());
             preparedStatement.setString(2, mission.getNome());
@@ -30,13 +32,14 @@ public class MissionImpl implements Imission {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return mission;
-    }
 
+        return Optional.of(mission);
+    }
 
     @Override
     public boolean Delete(String code) {
         Connection connection = DatabaseConnection.getConn();
+
         try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_MISSION)) {
             preparedStatement.setString(1, code);
             int rowsDeleted = preparedStatement.executeUpdate();
@@ -46,13 +49,14 @@ public class MissionImpl implements Imission {
         }
     }
 
-
     @Override
     public List<Mission> ShowList() {
         List<Mission> resultList = new ArrayList<>();
         Connection connection = DatabaseConnection.getConn();
+
         try (PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_MISSIONS)) {
             ResultSet resultSet = preparedStatement.executeQuery();
+
             while (resultSet.next()) {
                 Mission mission = new Mission(
                         resultSet.getString("code"),
@@ -65,35 +69,29 @@ public class MissionImpl implements Imission {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
         return resultList;
     }
 
-    @Override
-    public List<Mission> MisiionHistory() {
-        return null;
-    }
-
-    @Override
-    public List<Mission> MissionStatistic() {
-        return null;
-    }
-
-    public Mission getCodeMission(String code) {
+    public Optional<Mission> getCodeMission(String code) {
         Connection connection = DatabaseConnection.getConn();
+
         try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM Missions WHERE code=?")) {
             preparedStatement.setString(1, code);
             ResultSet resultSet = preparedStatement.executeQuery();
+
             if (resultSet.next()) {
-                return new Mission(
+                return Optional.of(new Mission(
                         resultSet.getString("code"),
                         resultSet.getString("nom"),
                         resultSet.getString("description"),
                         null
-                );
+                ));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return null;
+
+        return Optional.empty();
     }
 }

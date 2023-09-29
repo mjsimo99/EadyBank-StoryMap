@@ -3,14 +3,14 @@ package interfeces;
 import dto.Mission;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface Imission {
-    Mission Add(Mission mission);
+    Optional<Mission> Add(Mission mission);
     boolean Delete(String code);
     List<Mission> ShowList();
-    List<Mission> MisiionHistory();
-    List<Mission> MissionStatistic();
-    Mission getCodeMission(String code);
+
+    Optional<Mission> getCodeMission(String code);
 
 
 }

@@ -2,8 +2,10 @@ package interfeces;
 
 import dto.Personne;
 
+import java.util.Optional;
+
 public interface Ipersonne {
-    Personne Add(Personne personne);
+    Optional<Personne> Add(Personne personne);
 }
 
 

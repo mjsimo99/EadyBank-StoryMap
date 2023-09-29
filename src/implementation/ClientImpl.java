@@ -10,8 +10,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public class ClientImpl implements Iclient {
 
@@ -23,34 +23,27 @@ public class ClientImpl implements Iclient {
     private static final String ADD_CLIENT = "INSERT INTO Clients (code, nom, prenom, dateN, tel, adress) VALUES (?, ?, ?, ?, ?, ?)";
 
     @Override
-    public List<Client> SearchByCode(String code) {
-        List<Client> resultList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CODE)) {
+    public Optional<List<Client>> SearchByCode(String code)
+    {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CODE)) {
             preparedStatement.setString(1, code);
             ResultSet resultSet = preparedStatement.executeQuery();
+            List<Client> resultList = new ArrayList<>();
             while (resultSet.next()) {
-                Client client = new Client(
-                        resultSet.getString("code"),
-                        resultSet.getString("nom"),
-                        resultSet.getString("prenom"),
-                        resultSet.getDate("dateN"),
-                        resultSet.getString("tel"),
-                        resultSet.getString("adress"),
-                        null
-                );
+                Client client = getClientFromResultSet(resultSet);
                 resultList.add(client);
             }
+            return resultList.isEmpty() ? Optional.empty() : Optional.of(resultList);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return resultList;
     }
 
     @Override
     public boolean Delete(String code) {
-        Connection connection = DatabaseConnection.getConn();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT)) {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT)) {
             preparedStatement.setString(1, code);
             int rowsDeleted = preparedStatement.executeUpdate();
             return rowsDeleted > 0;
@@ -58,59 +51,44 @@ public class ClientImpl implements Iclient {
             throw new RuntimeException(e);
         }
     }
+
     @Override
-    public List<Client> Showlist() {
-        List<Client> resultList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_CLIENTS)) {
+    public Optional<List<Client>> Showlist() {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_CLIENTS)) {
             ResultSet resultSet = preparedStatement.executeQuery();
+            List<Client> resultList = new ArrayList<>();
             while (resultSet.next()) {
-                Client client = new Client(
-                        resultSet.getString("code"),
-                        resultSet.getString("nom"),
-                        resultSet.getString("prenom"),
-                        resultSet.getDate("dateN"),
-                        resultSet.getString("tel"),
-                        resultSet.getString("adress"),
-                        null
-                );
+                Client client = getClientFromResultSet(resultSet);
                 resultList.add(client);
             }
+            return resultList.isEmpty() ? Optional.empty() : Optional.of(resultList);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return resultList;
     }
 
     @Override
-    public List<Client> SearchByPrenom(String prenom) {
-        List<Client> resultList = new ArrayList<>();
-        Connection connection = DatabaseConnection.getConn();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_PRENOM)) {
+    public Optional<List<Client>> SearchByPrenom(String prenom) {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_PRENOM)) {
             preparedStatement.setString(1, prenom);
             ResultSet resultSet = preparedStatement.executeQuery();
+            List<Client> resultList = new ArrayList<>();
             while (resultSet.next()) {
-                Client client = new Client(
-                        resultSet.getString("code"),
-                        resultSet.getString("nom"),
-                        resultSet.getString("prenom"),
-                        resultSet.getDate("dateN"),
-                        resultSet.getString("tel"),
-                        resultSet.getString("adress"),
-                        null // List<Compte> comptes is not retrieved from the database in this example
-                );
+                Client client = getClientFromResultSet(resultSet);
                 resultList.add(client);
             }
+            return resultList.isEmpty() ? Optional.empty() : Optional.of(resultList);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return resultList;
     }
 
     @Override
-    public Client Update(Client client) {
-        Connection connection = DatabaseConnection.getConn();
-        try (PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_CLIENT)) {
+    public Optional<Client> Update(Client client) {
+        try (Connection connection = DatabaseConnection.getConn();
+             PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_CLIENT)) {
             preparedStatement.setString(1, client.getNom());
             preparedStatement.setString(2, client.getPrenom());
             preparedStatement.setDate(3, new java.sql.Date(client.getDateN().getTime()));
@@ -119,23 +97,18 @@ public class ClientImpl implements Iclient {
             preparedStatement.setString(6, client.getCode());
 
             int rowsUpdated = preparedStatement.executeUpdate();
-            if (rowsUpdated > 0) {
-                return client;
-            } else {
-                return null;
-            }
+            return (rowsUpdated > 0) ? Optional.of(client) : Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-
     @Override
-    public Personne Add(Personne personne) {
+    public Optional<Personne> Add(Personne personne) {
         if (personne instanceof Client) {
             Client client = (Client) personne;
-            Connection connection = DatabaseConnection.getConn();
-            try (PreparedStatement preparedStatement = connection.prepareStatement(ADD_CLIENT)) {
+            try (Connection connection = DatabaseConnection.getConn();
+                 PreparedStatement preparedStatement = connection.prepareStatement(ADD_CLIENT)) {
                 preparedStatement.setString(1, client.getCode());
                 preparedStatement.setString(2, client.getNom());
                 preparedStatement.setString(3, client.getPrenom());
@@ -144,10 +117,23 @@ public class ClientImpl implements Iclient {
                 preparedStatement.setString(6, client.getAdress());
 
                 preparedStatement.executeUpdate();
+                return Optional.of(personne);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
-        return personne;
+        return Optional.empty();
+    }
+
+    private Client getClientFromResultSet(ResultSet resultSet) throws SQLException {
+        return new Client(
+                resultSet.getString("code"),
+                resultSet.getString("nom"),
+                resultSet.getString("prenom"),
+                resultSet.getDate("dateN"),
+                resultSet.getString("tel"),
+                resultSet.getString("adress"),
+                null
+        );
     }
 }

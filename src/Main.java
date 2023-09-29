@@ -6,7 +6,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.*;
-import java.time.LocalDate;
 
 
 public class Main {
@@ -147,28 +146,20 @@ public class Main {
 
         Employe employe = new Employe(firstName, lastName, dateOfBirth, phone, address, matricule, recruitmentDate, email, null, null, null);
 
-        employeService.Add(employe);
+        Optional<Personne> result = employeService.Add(employe);
 
-        System.out.println("Employee added successfully!");
-    }
-
-    private static void searchEmployeeByMadtricule(Scanner scanner, Iemploye employeService) {
-        System.out.print("Enter Matricule to search: ");
-        String matricule = scanner.nextLine();
-        List<Employe> employees = employeService.SearchByMatricule(matricule);
-        if (employees.isEmpty()) {
-            System.out.println("No employees found with the specified Matricule.");
+        if (result.isPresent()) {
+            System.out.println("Employee added successfully!");
         } else {
-            System.out.println("Employees with Matricule '" + matricule + "':");
-            for (Employe employee : employees) {
-                System.out.println(employee);
-            }
+            System.out.println("Failed to add the employee.");
         }
     }
+
+
     private static void searchEmployeeByMatricule(Scanner scanner, Iemploye employeService) {
         System.out.print("Enter Matricule to search: ");
         String matricule = scanner.nextLine();
-        Optional<List<Employe>> optionalEmployees = Optional.ofNullable(employeService.SearchByMatricule(matricule));
+        Optional<List<Employe>> optionalEmployees = employeService.SearchByMatricule(matricule);
 
         if (optionalEmployees.isPresent()) {
             List<Employe> employees = optionalEmployees.get();
@@ -178,6 +169,7 @@ public class Main {
             System.out.println("No employees found with the specified Matricule.");
         }
     }
+
 
 
     private static void deleteEmployeeByMatricule(Scanner scanner, Iemploye employeService) {
@@ -192,90 +184,108 @@ public class Main {
     }
 
     private static void showAllEmployees(Iemploye employeService) {
-        List<Employe> employees = employeService.ShowList();
-        if (employees.isEmpty()) {
-            System.out.println("No employees found in the database.");
-        } else {
+        Optional<List<Employe>> employees = employeService.ShowList();
+        if (employees.isPresent()) {
+            List<Employe> employeeList = employees.get();
             System.out.println("List of all employees:");
-            for (Employe employee : employees) {
+            for (Employe employee : employeeList) {
                 System.out.println(employee);
             }
+        } else {
+            System.out.println("No employees found in the database.");
         }
     }
+
 
     private static void searchEmployeesByRecruitmentDate(Scanner scanner, Iemploye employeService) {
         System.out.print("Enter Recruitment Date (yyyy-MM-dd) to search: ");
         String dateRecruitmentStr = scanner.nextLine();
         try {
             Date dateRecruitment = new SimpleDateFormat("yyyy-MM-dd").parse(dateRecruitmentStr);
-            List<Employe> employees = employeService.SearchByDateR(dateRecruitment);
-            if (employees.isEmpty()) {
-                System.out.println("No employees found with the specified Recruitment Date.");
-            } else {
-                System.out.println("Employees recruited on '" + dateRecruitmentStr + "':");
-                for (Employe employee : employees) {
-                    System.out.println(employee);
+            Optional<List<Employe>> optionalEmployees = employeService.SearchByDateR(dateRecruitment);
+
+            if (optionalEmployees.isPresent()) {
+                List<Employe> employees = optionalEmployees.get();
+                if (employees.isEmpty()) {
+                    System.out.println("No employees found with the specified Recruitment Date.");
+                } else {
+                    System.out.println("Employees recruited on '" + dateRecruitmentStr + "':");
+                    for (Employe employee : employees) {
+                        System.out.println(employee);
+                    }
                 }
+            } else {
+                System.out.println("No employees found with the specified Recruitment Date.");
             }
         } catch (ParseException e) {
             System.err.println("Invalid date format. Please enter a date in yyyy-MM-dd format.");
         }
     }
 
+
     private static void updateEmployee(Scanner scanner, Iemploye employeService) {
         System.out.print("Enter Matricule to update: ");
         String matricule = scanner.nextLine();
-        List<Employe> employees = employeService.SearchByMatricule(matricule);
-        if (employees.isEmpty()) {
-            System.out.println("No employees found with the specified Matricule.");
-        } else {
-            Employe employeeToUpdate = employees.get(0);
+        Optional<List<Employe>> employeesOptional = employeService.SearchByMatricule(matricule);
 
-            System.out.println("Update employee details:");
-            System.out.print("Email Address: ");
-            String email = scanner.nextLine();
+        if (employeesOptional.isPresent()) {
+            List<Employe> employees = employeesOptional.get();
 
-            System.out.print("First Name: ");
-            String firstName = scanner.nextLine();
+            if (employees.isEmpty()) {
+                System.out.println("No employees found with the specified Matricule.");
+            } else {
+                Employe employeeToUpdate = employees.get(0);
 
-            System.out.print("Last Name: ");
-            String lastName = scanner.nextLine();
+                System.out.println("Update employee details:");
+                System.out.print("Email Address: ");
+                String email = scanner.nextLine();
 
-            Date dateOfBirth = null;
-            boolean validDateOfBirth = false;
-            while (!validDateOfBirth) {
-                System.out.print("Date of Birth (yyyy-MM-dd): ");
-                String dateOfBirthStr = scanner.nextLine();
-                try {
-                    dateOfBirth = new SimpleDateFormat("yyyy-MM-dd").parse(dateOfBirthStr);
-                    validDateOfBirth = true;
-                } catch (ParseException e) {
-                    System.err.println("Invalid date format. Please enter a date in yyyy-MM-dd format.");
+                System.out.print("First Name: ");
+                String firstName = scanner.nextLine();
+
+                System.out.print("Last Name: ");
+                String lastName = scanner.nextLine();
+
+                Date dateOfBirth = null;
+                boolean validDateOfBirth = false;
+                while (!validDateOfBirth) {
+                    System.out.print("Date of Birth (yyyy-MM-dd): ");
+                    String dateOfBirthStr = scanner.nextLine();
+                    try {
+                        dateOfBirth = new SimpleDateFormat("yyyy-MM-dd").parse(dateOfBirthStr);
+                        validDateOfBirth = true;
+                    } catch (ParseException e) {
+                        System.err.println("Invalid date format. Please enter a date in yyyy-MM-dd format.");
+                    }
+                }
+
+                System.out.print("Phone Number: ");
+                String phone = scanner.nextLine();
+
+                System.out.print("Address: ");
+                String address = scanner.nextLine();
+
+                employeeToUpdate.setEmailAdresse(email);
+                employeeToUpdate.setNom(firstName);
+                employeeToUpdate.setPrenom(lastName);
+                employeeToUpdate.setDateN(dateOfBirth);
+                employeeToUpdate.setTel(phone);
+                employeeToUpdate.setAdress(address);
+
+                Optional<Employe> updatedEmployee = employeService.Update(employeeToUpdate);
+
+                if (updatedEmployee.isPresent()) {
+                    System.out.println("Employee with Matricule '" + matricule + "' updated successfully.");
+                } else {
+                    System.out.println("Failed to update employee with Matricule '" + matricule + "'.");
                 }
             }
-
-            System.out.print("Phone Number: ");
-            String phone = scanner.nextLine();
-
-            System.out.print("Address: ");
-            String address = scanner.nextLine();
-
-            employeeToUpdate.setEmailAdresse(email);
-            employeeToUpdate.setNom(firstName);
-            employeeToUpdate.setPrenom(lastName);
-            employeeToUpdate.setDateN(dateOfBirth);
-            employeeToUpdate.setTel(phone);
-            employeeToUpdate.setAdress(address);
-
-            Employe updatedEmployee = employeService.Update(employeeToUpdate);
-
-            if (updatedEmployee != null) {
-                System.out.println("Employee with Matricule '" + matricule + "' updated successfully.");
-            } else {
-                System.out.println("Failed to update employee with Matricule '" + matricule + "'.");
-            }
+        } else {
+            System.out.println("No employees found with the specified Matricule.");
         }
     }
+
+
 
     private static void clientManagement(Scanner scanner, Iclient clientService) {
         while (true) {
@@ -348,16 +358,23 @@ public class Main {
     private static void searchClientByCode(Scanner scanner, Iclient clientService) {
         System.out.print("Enter Code to search: ");
         String code = scanner.nextLine();
-        List<Client> clients = clientService.SearchByCode(code);
-        if (clients.isEmpty()) {
-            System.out.println("No clients found with the specified Code.");
-        } else {
-            System.out.println("Clients with Code '" + code + "':");
-            for (Client client : clients) {
-                System.out.println(client);
+        Optional<List<Client>> optionalClients = clientService.SearchByCode(code);
+
+        if (optionalClients.isPresent()) {
+            List<Client> clients = optionalClients.get();
+            if (clients.isEmpty()) {
+                System.out.println("No clients found with the specified Code.");
+            } else {
+                System.out.println("Clients with Code '" + code + "':");
+                for (Client client : clients) {
+                    System.out.println(client);
+                }
             }
+        } else {
+            System.out.println("No clients found with the specified Code.");
         }
     }
+
 
     private static void deleteClientByCode(Scanner scanner, Iclient clientService) {
         System.out.print("Enter Code to delete: ");
@@ -371,81 +388,99 @@ public class Main {
     }
 
     private static void showAllClients(Iclient clientService) {
-        List<Client> clients = clientService.Showlist();
-        if (clients.isEmpty()) {
-            System.out.println("No clients found in the database.");
-        } else {
-            System.out.println("List of all clients:");
-            for (Client client : clients) {
-                System.out.println(client);
+        Optional<List<Client>> clientsOptional = clientService.Showlist();
+        if (clientsOptional.isPresent()) {
+            List<Client> clients = clientsOptional.get();
+            if (clients.isEmpty()) {
+                System.out.println("No clients found in the database.");
+            } else {
+                System.out.println("List of all clients:");
+                for (Client client : clients) {
+                    System.out.println(client);
+                }
             }
+        } else {
+            System.out.println("No clients found in the database.");
         }
     }
 
+
     private static void searchClientsByLastName(Scanner scanner, Iclient clientService) {
         System.out.print("Enter Last Name to search: ");
-        String lasttName = scanner.nextLine();
-        List<Client> clients = clientService.SearchByPrenom(lasttName);
-        if (clients.isEmpty()) {
-            System.out.println("No clients found with the specified Last Name.");
-        } else {
-            System.out.println("Clients with First Name '" + lasttName + "':");
-            for (Client client : clients) {
-                System.out.println(client);
+        String lastName = scanner.nextLine();
+        Optional<List<Client>> clientsOptional = clientService.SearchByPrenom(lastName);
+        if (clientsOptional.isPresent()) {
+            List<Client> clients = clientsOptional.get();
+            if (clients.isEmpty()) {
+                System.out.println("No clients found with the specified Last Name.");
+            } else {
+                System.out.println("Clients with Last Name '" + lastName + "':");
+                for (Client client : clients) {
+                    System.out.println(client);
+                }
             }
+        } else {
+            System.out.println("No clients found with the specified Last Name.");
         }
     }
+
 
     private static void updateClient(Scanner scanner, Iclient clientService) {
         System.out.print("Enter Code to update: ");
         String code = scanner.nextLine();
-        List<Client> clients = clientService.SearchByCode(code);
-        if (clients.isEmpty()) {
-            System.out.println("No clients found with the specified Code.");
-        } else {
-            Client clientToUpdate = clients.get(0);
+        Optional<List<Client>> clientsOptional = clientService.SearchByCode(code);
+        if (clientsOptional.isPresent()) {
+            List<Client> clients = clientsOptional.get();
+            if (clients.isEmpty()) {
+                System.out.println("No clients found with the specified Code.");
+            } else {
+                Client clientToUpdate = clients.get(0);
 
-            System.out.println("Update client details:");
-            System.out.print("First Name: ");
-            String firstName = scanner.nextLine();
+                System.out.println("Update client details:");
+                System.out.print("First Name: ");
+                String firstName = scanner.nextLine();
 
-            System.out.print("Last Name: ");
-            String lastName = scanner.nextLine();
+                System.out.print("Last Name: ");
+                String lastName = scanner.nextLine();
 
-            Date dateOfBirth = null;
-            boolean validDateOfBirth = false;
-            while (!validDateOfBirth) {
-                System.out.print("Date of Birth (yyyy-MM-dd): ");
-                String dateOfBirthStr = scanner.nextLine();
-                try {
-                    dateOfBirth = new SimpleDateFormat("yyyy-MM-dd").parse(dateOfBirthStr);
-                    validDateOfBirth = true;
-                } catch (ParseException e) {
-                    System.err.println("Invalid date format. Please enter a date in yyyy-MM-dd format.");
+                Date dateOfBirth = null;
+                boolean validDateOfBirth = false;
+                while (!validDateOfBirth) {
+                    System.out.print("Date of Birth (yyyy-MM-dd): ");
+                    String dateOfBirthStr = scanner.nextLine();
+                    try {
+                        dateOfBirth = new SimpleDateFormat("yyyy-MM-dd").parse(dateOfBirthStr);
+                        validDateOfBirth = true;
+                    } catch (ParseException e) {
+                        System.err.println("Invalid date format. Please enter a date in yyyy-MM-dd format.");
+                    }
+                }
+
+                System.out.print("Phone Number: ");
+                String phone = scanner.nextLine();
+
+                System.out.print("Address: ");
+                String address = scanner.nextLine();
+
+                clientToUpdate.setNom(firstName);
+                clientToUpdate.setPrenom(lastName);
+                clientToUpdate.setDateN(dateOfBirth);
+                clientToUpdate.setTel(phone);
+                clientToUpdate.setAdress(address);
+
+                Optional<Client> updatedClientOptional = clientService.Update(clientToUpdate);
+
+                if (updatedClientOptional.isPresent()) {
+                    System.out.println("Client with Code '" + code + "' updated successfully.");
+                } else {
+                    System.out.println("Failed to update client with Code '" + code + "'.");
                 }
             }
-
-            System.out.print("Phone Number: ");
-            String phone = scanner.nextLine();
-
-            System.out.print("Address: ");
-            String address = scanner.nextLine();
-
-            clientToUpdate.setNom(firstName);
-            clientToUpdate.setPrenom(lastName);
-            clientToUpdate.setDateN(dateOfBirth);
-            clientToUpdate.setTel(phone);
-            clientToUpdate.setAdress(address);
-
-            Client updatedClient = clientService.Update(clientToUpdate);
-
-            if (updatedClient != null) {
-                System.out.println("Client with Code '" + code + "' updated successfully.");
-            } else {
-                System.out.println("Failed to update client with Code '" + code + "'.");
-            }
+        } else {
+            System.out.println("No clients found with the specified Code.");
         }
     }
+
 
     private static void missionManagement(Scanner scanner, Imission missionService) {
         while (true) {
@@ -453,9 +488,7 @@ public class Main {
             System.out.println("1. Add Mission");
             System.out.println("2. Delete Mission by Code");
             System.out.println("3. Show All Missions");
-            System.out.println("4. Mission History");
-            System.out.println("5. Mission Statistics");
-            System.out.println("6. Back to Main Menu");
+            System.out.println("4. Back to Main Menu");
 
             System.out.print("Enter your choice (1-6): ");
             int choice = scanner.nextInt();
@@ -465,9 +498,7 @@ public class Main {
                 case 1 -> addMission(scanner, missionService);
                 case 2 -> deleteMissionByCode(scanner, missionService);
                 case 3 -> showAllMissions(missionService);
-                case 4 -> showMissionHistory(missionService);
-                case 5 -> showMissionStatistics(missionService);
-                case 6 -> {
+                case 4 -> {
                     return;
                 }
                 default -> System.out.println("Invalid choice. Please enter a number between 1 and 6.");
@@ -516,29 +547,9 @@ public class Main {
         }
     }
 
-    private static void showMissionHistory(Imission missionService) {
-        List<Mission> missionHistory = missionService.MisiionHistory();
-        if (missionHistory.isEmpty()) {
-            System.out.println("No mission history found in the database.");
-        } else {
-            System.out.println("Mission history:");
-            for (Mission mission : missionHistory) {
-                System.out.println(mission);
-            }
-        }
-    }
 
-    private static void showMissionStatistics(Imission missionService) {
-        List<Mission> missionStatistics = missionService.MissionStatistic();
-        if (missionStatistics.isEmpty()) {
-            System.out.println("No mission statistics found in the database.");
-        } else {
-            System.out.println("Mission statistics:");
-            for (Mission mission : missionStatistics) {
-                System.out.println(mission);
-            }
-        }
-    }
+
+
 
     private static void affectationManagement(Scanner scanner, Iaffectation affectationService, Iemploye employeService, Imission missionService) {
         while (true) {
@@ -565,41 +576,49 @@ public class Main {
             }
         }
     }
-   public static void getAffectationStatistics(Iaffectation affectationService){
-       int[] statistics = affectationService.getAffectationStatistics();
-       int totalAffectations = statistics[0];
-       int totalEmployees = statistics[1];
-       int totalMissions = statistics[2];
+    public static void getAffectationStatistics(Iaffectation affectationService) {
+        HashMap<String, Integer> statisticsMap = affectationService.getAffectationStatistics();
 
-       System.out.println("Total Affectations: " + totalAffectations);
-       System.out.println("Total Employees: " + totalEmployees);
-       System.out.println("Total Missions: " + totalMissions);
-   }
+        int totalAffectations = statisticsMap.get("TotalAffectations");
+        int totalEmployees = statisticsMap.get("TotalEmployees");
+        int totalMissions = statisticsMap.get("TotalMissions");
 
+        System.out.println("Total Affectations: " + totalAffectations);
+        System.out.println("Total Employees: " + totalEmployees);
+        System.out.println("Total Missions: " + totalMissions);
+    }
 
 
     private static void createNewAffectation(Scanner scanner, Iaffectation affectationService, Iemploye employeService, Imission missionService) {
         System.out.print("Enter Employee Matricule: ");
         String employeeMatricule = scanner.nextLine();
 
-        List<Employe> employees = employeService.SearchByMatricule(employeeMatricule);
+        Optional<List<Employe>> employeesOptional = employeService.SearchByMatricule(employeeMatricule);
 
+        if (employeesOptional.isEmpty()) {
+            System.out.println("Employee with Matricule '" + employeeMatricule + "' not found.");
+            return;
+        }
+
+        List<Employe> employees = employeesOptional.get();
         if (employees.isEmpty()) {
             System.out.println("Employee with Matricule '" + employeeMatricule + "' not found.");
             return;
         }
-        Employe employee = employees.get(0);
 
+        Employe employee = employees.get(0);
 
         System.out.print("Enter Mission Code: ");
         String missionCode = scanner.nextLine();
 
-        Mission mission = missionService.getCodeMission(missionCode);
+        Optional<Mission> missionOptional = missionService.getCodeMission(missionCode);
 
-        if (mission == null) {
+        if (missionOptional.isEmpty()) {
             System.out.println("Mission with Code '" + missionCode + "' not found.");
             return;
         }
+
+        Mission mission = missionOptional.get();
 
         System.out.print("Enter Affectation Name: ");
         String affectationName = scanner.nextLine();
@@ -609,9 +628,9 @@ public class Main {
 
         Affectation newAffectation = new Affectation(employee, mission, affectationName, affectationDescription);
 
-        Affectation createdAffectation = affectationService.CreateNewAffectation(newAffectation);
+        Optional<Affectation> createdAffectation = affectationService.createNewAffectation(newAffectation);
 
-        if (createdAffectation != null) {
+        if (createdAffectation.isPresent()) {
             System.out.println("Affectation created successfully!");
         } else {
             System.out.println("Failed to create affectation.");
@@ -623,7 +642,14 @@ public class Main {
         System.out.print("Enter Employee Matricule: ");
         String employeeMatricule = scanner.nextLine();
 
-        List<Employe> employees = employeService.SearchByMatricule(employeeMatricule);
+        Optional<List<Employe>> employeesOptional = employeService.SearchByMatricule(employeeMatricule);
+
+        if (employeesOptional.isEmpty()) {
+            System.out.println("Employee with Matricule '" + employeeMatricule + "' not found.");
+            return;
+        }
+
+        List<Employe> employees = employeesOptional.get();
 
         if (employees.isEmpty()) {
             System.out.println("Employee with Matricule '" + employeeMatricule + "' not found.");
@@ -633,12 +659,14 @@ public class Main {
         System.out.print("Enter Mission Code: ");
         String missionCode = scanner.nextLine();
 
-        Mission mission = missionService.getCodeMission(missionCode);
+        Optional<Mission> missionOptional = missionService.getCodeMission(missionCode);
 
-        if (mission == null) {
+        if (missionOptional.isEmpty()) {
             System.out.println("Mission with Code '" + missionCode + "' not found.");
             return;
         }
+
+        Mission mission = missionOptional.get();
 
         Affectation affectationToDelete = new Affectation(employees.get(0), mission, "", "");
 
@@ -650,6 +678,7 @@ public class Main {
             System.out.println("Failed to delete affectation.");
         }
     }
+
     private static void showAssignmentHistoryByMatricule(Scanner scanner, Iaffectation affectationService) {
         System.out.print("Enter Employee Matricule: ");
         String employeeMatricule = scanner.nextLine();
@@ -749,10 +778,9 @@ public class Main {
                 compte
         );
 
-        // Call the Add method to insert the operation into the database
-        Operation addedOperation = operationService.Add(newOperation);
+        Optional<Operation> addedOperation = operationService.Add(newOperation);
 
-        if (addedOperation != null) {
+        if (addedOperation.isPresent()) {
             System.out.println("Operation added successfully.");
         } else {
             System.out.println("Failed to add the operation.");
@@ -767,17 +795,30 @@ public class Main {
         System.out.print("Enter Operation Number to search: ");
         String operationNumber = scanner.nextLine();
 
-        List<Operation> operations = operationService.SearchByNumber(operationNumber);
+        Optional<Optional<List<Operation>>> operationsOptional = Optional.ofNullable(operationService.SearchByNumber(operationNumber));
 
-        if (operations.isEmpty()) {
-            System.out.println("No operations found with the specified number.");
-        } else {
-            System.out.println("Operations with Number '" + operationNumber + "':");
-            for (Operation operation : operations) {
-                System.out.println(operation);
+        if (operationsOptional.isPresent()) {
+            Optional<List<Operation>> innerOptional = operationsOptional.get();
+
+            if (innerOptional.isPresent()) {
+                List<Operation> operations = innerOptional.get();
+                if (operations.isEmpty()) {
+                    System.out.println("No operations found with the specified number.");
+                } else {
+                    System.out.println("Operations with Number '" + operationNumber + "':");
+                    for (Operation operation : operations) {
+                        System.out.println(operation);
+                    }
+                }
+            } else {
+                System.out.println("Failed to retrieve operations with the specified number.");
             }
+        } else {
+            System.out.println("Failed to retrieve operations with the specified number.");
         }
     }
+
+
 
     private static void deleteOperationByNumber(Scanner scanner, Ioperation operationService) {
         System.out.print("Enter Operation Number to delete: ");
@@ -860,9 +901,9 @@ public class Main {
 
         Compte compte = new CompteCourant(numero, sold, sqlDate, etat, client, employe, operations, decouvert);
 
-        Compte addedCompte = compteCourantService.Add(compte);
+        Optional<Compte> addedCompte = compteCourantService.Add(compte);
 
-        if (addedCompte != null) {
+        if (addedCompte.isPresent()) {
             System.out.println("Compte added successfully!");
         } else {
             System.out.println("Failed to add Compte.");
@@ -919,9 +960,9 @@ public class Main {
 
         existingCompte.setEtat(newStatus);
 
-        Compte updatedCompte = compteCourantService.UpdateStatus(existingCompte);
+        Optional<Compte> updatedCompte = compteCourantService.UpdateStatus(existingCompte);
 
-        if (updatedCompte != null) {
+        if (updatedCompte.isPresent()) {
             System.out.println("Compte status updated successfully.");
         } else {
             System.out.println("Failed to update Compte status.");
@@ -1025,34 +1066,18 @@ public class Main {
             scanner.nextLine();
 
             switch (choice) {
-                case 1:
-                    addCompteEpargne(scanner, compteEpargneService);
-                    break;
-                case 2:
-                    searchCompteEpargneByClientCode(scanner, compteEpargneService);
-                    break;
-                case 3:
-                    deleteCompteEpargneByNumero(scanner, compteEpargneService);
-                    break;
-                case 4:
-                    updateCompteEpargneStatusByNumero(scanner, compteEpargneService);
-                    break;
-                case 5:
-                    showAllComptesEpargne(compteEpargneService);
-                    break;
-                case 6:
-                    searchCompteEpargneByOperation(scanner, compteEpargneService);
-                    break;
-                case 7:
-                    filterComptesEpargneByStatus(scanner, compteEpargneService);
-                    break;
-                case 8:
-                    filterComptesEpargneByDateOfCreation(scanner, compteEpargneService);
-                    break;
-                case 9:
+                case 1 -> addCompteEpargne(scanner, compteEpargneService);
+                case 2 -> searchCompteEpargneByClientCode(scanner, compteEpargneService);
+                case 3 -> deleteCompteEpargneByNumero(scanner, compteEpargneService);
+                case 4 -> updateCompteEpargneStatusByNumero(scanner, compteEpargneService);
+                case 5 -> showAllComptesEpargne(compteEpargneService);
+                case 6 -> searchCompteEpargneByOperation(scanner, compteEpargneService);
+                case 7 -> filterComptesEpargneByStatus(scanner, compteEpargneService);
+                case 8 -> filterComptesEpargneByDateOfCreation(scanner, compteEpargneService);
+                case 9 -> {
                     return;
-                default:
-                    System.out.println("Invalid choice. Please enter a number between 1 and 9.");
+                }
+                default -> System.out.println("Invalid choice. Please enter a number between 1 and 9.");
             }
         }
 
@@ -1091,9 +1116,9 @@ public class Main {
 
         Compte compte = new CompteEpargne(numero, sold, sqlDate, etat, client, employe, operations, tauxInteret);
 
-        Compte addedCompte = compteEpargneService.Add(compte);
+        Optional<Compte> addedCompte = compteEpargneService.Add(compte);
 
-        if (addedCompte != null) {
+        if (addedCompte.isPresent()) {
             System.out.println("Compte Epargne added successfully!");
         } else {
             System.out.println("Failed to add Compte Epargne.");
@@ -1148,9 +1173,9 @@ public class Main {
 
         existingCompte.setEtat(newStatus);
 
-        Compte updatedCompte = compteEpargneService.UpdateStatus(existingCompte);
+        Optional<Compte> updatedCompte = compteEpargneService.UpdateStatus(existingCompte);
 
-        if (updatedCompte != null) {
+        if (updatedCompte.isPresent()) {
             System.out.println("Compte Epargne status updated successfully.");
         } else {
             System.out.println("Failed to update Compte Epargne status.");
