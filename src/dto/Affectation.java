@@ -15,6 +15,7 @@ public class Affectation {
 
 
 
+
     public Employe getEmploye() {
         return employe;
     }

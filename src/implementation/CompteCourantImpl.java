@@ -32,7 +32,11 @@ public class CompteCourantImpl implements Icompte {
             "LEFT JOIN ComptesCourants cc ON c.numero = cc.numeroCompte " +
             "INNER JOIN Operations ao ON c.numero = ao.compte_numero " +
             "WHERE ao.type = ?";
-    private static final String FILTER_BY_STATUS = "SELECT * FROM Comptes WHERE etat = ? ORDER BY etat DESC";
+    private static final String FILTER_BY_STATUS = "SELECT c.numero, c.sold, c.dateCreation, c.etat, cc.decouvert " +
+            "FROM Comptes c " +
+            "LEFT JOIN ComptesCourants cc ON c.numero = cc.numeroCompte " +
+            "WHERE c.etat = ? " +
+            "ORDER BY c.etat DESC";
     private static final String FILTER_BY_DATE_CREATION = "SELECT c.numero, c.sold, c.dateCreation, c.etat, cc.decouvert " +
             "FROM Comptes c " +
             "LEFT JOIN ComptesCourants cc ON c.numero = cc.numeroCompte " +
@@ -41,7 +45,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public Optional<Compte> Add(Compte compte) {
         if (compte instanceof CompteCourant compteCourant) {
-            try (Connection connection = DatabaseConnection.getConn();
+            Connection connection = DatabaseConnection.getConn();
+            try (
                  PreparedStatement preparedStatement = connection.prepareStatement(INSERT_COMPTE_COURANT)) {
                 preparedStatement.setString(1, compteCourant.getNumero());
                 preparedStatement.setDouble(2, compteCourant.getSold());
@@ -72,7 +77,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public List<Compte> SearchByClient(Client client) {
         List<Compte> compteList = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CLIENT)) {
             preparedStatement.setString(1, client.getCode());
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -108,7 +114,8 @@ public class CompteCourantImpl implements Icompte {
 
     @Override
     public boolean Delete(String numero) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement deleteComptesStatement = connection.prepareStatement(DELETE_COMPTE)) {
             deleteComptesStatement.setString(1, numero);
             int rowsDeleted = deleteComptesStatement.executeUpdate();
@@ -122,7 +129,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public Optional<Compte> UpdateStatus(Compte compte) {
         if (compte instanceof CompteCourant compteCourant) {
-            try (Connection connection = DatabaseConnection.getConn();
+            Connection connection = DatabaseConnection.getConn();
+            try (
                  PreparedStatement updateCompteStatusStatement = connection.prepareStatement(UPDATE_STATUS_COMPTE)) {
                 updateCompteStatusStatement.setString(1, compteCourant.getEtat().name());
                 updateCompteStatusStatement.setString(2, compteCourant.getNumero());
@@ -141,7 +149,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public List<Compte> ShowList() {
         List<Compte> compteList = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(LIST_COMPTE);
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
@@ -189,7 +198,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public Optional<Compte> Update(Compte compte) {
         if (compte instanceof CompteCourant compteCourant) {
-            try (Connection connection = DatabaseConnection.getConn();
+            Connection connection = DatabaseConnection.getConn();
+            try (
                  PreparedStatement updateCompteStatement = connection.prepareStatement(UPDATE_COMPTE)) {
                 updateCompteStatement.setDouble(1, compteCourant.getSold());
                 updateCompteStatement.setDate(2, new java.sql.Date(compteCourant.getDateCreation().getTime()));
@@ -212,7 +222,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public List<Compte> SearchByOperation(Operation operation) {
         List<Compte> compteList = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_OPERATION)) {
             preparedStatement.setString(1, operation.getType().name());
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -237,7 +248,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public List<Compte> FilterByStatus(EtatCompte etat) {
         List<Compte> compteList = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(FILTER_BY_STATUS)) {
             preparedStatement.setString(1, etat.name());
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -246,8 +258,10 @@ public class CompteCourantImpl implements Icompte {
                     double sold = resultSet.getDouble("sold");
                     Date dateCreation = resultSet.getDate("dateCreation");
                     String etatStr = resultSet.getString("etat");
+                    double decouvert = resultSet.getDouble("decouvert");
 
-                    Compte compte = new CompteCourant(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, 0.0);
+
+                    Compte compte = new CompteCourant(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, decouvert);
                     compteList.add(compte);
                 }
             }
@@ -261,7 +275,8 @@ public class CompteCourantImpl implements Icompte {
     @Override
     public List<Compte> FilterByDCreation(Date dateCreation) {
         List<Compte> compteList = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(FILTER_BY_DATE_CREATION)) {
             preparedStatement.setDate(1, new java.sql.Date(dateCreation.getTime()));
             try (ResultSet resultSet = preparedStatement.executeQuery()) {

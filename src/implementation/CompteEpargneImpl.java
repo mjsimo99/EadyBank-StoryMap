@@ -36,7 +36,11 @@ public class CompteEpargneImpl implements Icompte {
             "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
             "INNER JOIN Operations ao ON c.numero = ao.compte_numero " +
             "WHERE ao.type = ?";
-    private static final String FILTER_BY_STATUS = "SELECT * FROM Comptes WHERE etat = ? ORDER BY etat DESC";
+    private static final String FILTER_BY_STATUS = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
+            "FROM Comptes c " +
+            "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
+            "WHERE c.etat = ? " +
+            "ORDER BY c.etat DESC";
     private static final String FILTER_BY_DATE_CREATION = "SELECT c.numero, c.sold, c.dateCreation, c.etat, ce.tauxInteret " +
             "FROM Comptes c " +
             "LEFT JOIN ComptesEpargnes ce ON c.numero = ce.numeroCompte " +
@@ -68,7 +72,8 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public Optional<Compte> Add(Compte compte) {
         if (compte instanceof CompteEpargne compteEpargne) {
-            try (Connection connection = DatabaseConnection.getConn()) {
+            Connection connection = DatabaseConnection.getConn();
+
                 try (PreparedStatement preparedStatement = connection.prepareStatement(INSERT_COMPTE_EPARGNE)) {
                     preparedStatement.setString(1, compteEpargne.getNumero());
                     preparedStatement.setDouble(2, compteEpargne.getSold());
@@ -90,7 +95,7 @@ public class CompteEpargneImpl implements Icompte {
                         return Optional.of(compteEpargne);
                     }
                 }
-            } catch (SQLException e) {
+             catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -100,8 +105,8 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public List<Compte> SearchByClient(Client client) {
         List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        try (Connection connection = DatabaseConnection.getConn()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CLIENT)) {
                 preparedStatement.setString(1, client.getCode());
                 ResultSet resultSet = preparedStatement.executeQuery();
@@ -128,7 +133,7 @@ public class CompteEpargneImpl implements Icompte {
                         throw new RuntimeException(e);
                     }
                 }
-            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -138,13 +143,13 @@ public class CompteEpargneImpl implements Icompte {
 
     @Override
     public boolean Delete(String numero) {
-        try (Connection connection = DatabaseConnection.getConn()) {
+        Connection connection = DatabaseConnection.getConn();
             try (PreparedStatement deleteComptesStatement = connection.prepareStatement(DELETE_COMPTE)) {
                 deleteComptesStatement.setString(1, numero);
                 int rowsDeleted = deleteComptesStatement.executeUpdate();
 
                 return rowsDeleted > 0;
-            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -153,7 +158,7 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public Optional<Compte> UpdateStatus(Compte compte) {
         if (compte instanceof CompteEpargne compteEpargne) {
-            try (Connection connection = DatabaseConnection.getConn()) {
+            Connection connection = DatabaseConnection.getConn();
                 try (PreparedStatement updateCompteStatusStatement = connection.prepareStatement(UPDATE_STATUS_COMPTE)) {
                     updateCompteStatusStatement.setString(1, compteEpargne.getEtat().name());
                     updateCompteStatusStatement.setString(2, compteEpargne.getNumero());
@@ -162,7 +167,7 @@ public class CompteEpargneImpl implements Icompte {
                     if (rowsUpdated > 0) {
                         return Optional.of(compteEpargne);
                     }
-                }
+
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -174,7 +179,7 @@ public class CompteEpargneImpl implements Icompte {
     public List<Compte> FilterByStatus(EtatCompte etat) {
         List<Compte> compteList = new ArrayList<>();
 
-        try (Connection connection = DatabaseConnection.getConn()) {
+        Connection connection = DatabaseConnection.getConn();
             try (PreparedStatement preparedStatement = connection.prepareStatement(FILTER_BY_STATUS)) {
                 preparedStatement.setString(1, etat.name());
                 ResultSet resultSet = preparedStatement.executeQuery();
@@ -189,7 +194,7 @@ public class CompteEpargneImpl implements Icompte {
                     Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
                     compteList.add(compte);
                 }
-            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -200,8 +205,8 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public List<Compte> ShowList() {
         List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        try (Connection connection = DatabaseConnection.getConn()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(LIST_COMPTE)) {
                 ResultSet resultSet = preparedStatement.executeQuery();
 
@@ -215,7 +220,7 @@ public class CompteEpargneImpl implements Icompte {
                     Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
                     compteList.add(compte);
                 }
-            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -226,8 +231,8 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public List<Compte> FilterByDCreation(Date dateCreation) {
         List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        try (Connection connection = DatabaseConnection.getConn()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(FILTER_BY_DATE_CREATION)) {
                 preparedStatement.setDate(1, new java.sql.Date(dateCreation.getTime()));
                 ResultSet resultSet = preparedStatement.executeQuery();
@@ -239,10 +244,11 @@ public class CompteEpargneImpl implements Icompte {
                     String etatStr = resultSet.getString("etat");
                     double tauxInteret = resultSet.getDouble("tauxInteret");
 
+
                     Compte compte = new CompteEpargne(numero, sold, creationDate, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
                     compteList.add(compte);
                 }
-            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -253,8 +259,9 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public Optional<Compte> Update(Compte compte) {
         if (compte instanceof CompteEpargne compteEpargne) {
-            try (Connection connection = DatabaseConnection.getConn()) {
-                try (PreparedStatement updateCompteStatement = connection.prepareStatement(UPDATE_COMPTE)) {
+            Connection connection = DatabaseConnection.getConn();
+
+            try (PreparedStatement updateCompteStatement = connection.prepareStatement(UPDATE_COMPTE)) {
                     updateCompteStatement.setDouble(1, compteEpargne.getSold());
                     updateCompteStatement.setDate(2, new java.sql.Date(compteEpargne.getDateCreation().getTime()));
                     updateCompteStatement.setString(3, compteEpargne.getEtat().name());
@@ -266,7 +273,7 @@ public class CompteEpargneImpl implements Icompte {
                     if (rowsUpdated > 0) {
                         return Optional.of(compteEpargne);
                     }
-                }
+
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -277,8 +284,8 @@ public class CompteEpargneImpl implements Icompte {
     @Override
     public List<Compte> SearchByOperation(Operation operation) {
         List<Compte> compteList = new ArrayList<>();
+        Connection connection = DatabaseConnection.getConn();
 
-        try (Connection connection = DatabaseConnection.getConn()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_OPERATION)) {
                 preparedStatement.setString(1, operation.getType().name());
                 ResultSet resultSet = preparedStatement.executeQuery();
@@ -293,7 +300,7 @@ public class CompteEpargneImpl implements Icompte {
                     Compte compte = new CompteEpargne(numero, sold, dateCreation, EtatCompte.valueOf(etatStr), null, null, null, tauxInteret);
                     compteList.add(compte);
                 }
-            }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

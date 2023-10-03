@@ -25,7 +25,8 @@ public class ClientImpl implements Iclient {
     @Override
     public Optional<List<Client>> SearchByCode(String code)
     {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_CODE)) {
             preparedStatement.setString(1, code);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -42,7 +43,8 @@ public class ClientImpl implements Iclient {
 
     @Override
     public boolean Delete(String code) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT)) {
             preparedStatement.setString(1, code);
             int rowsDeleted = preparedStatement.executeUpdate();
@@ -54,7 +56,8 @@ public class ClientImpl implements Iclient {
 
     @Override
     public Optional<List<Client>> Showlist() {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SHOW_ALL_CLIENTS)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Client> resultList = new ArrayList<>();
@@ -70,7 +73,8 @@ public class ClientImpl implements Iclient {
 
     @Override
     public Optional<List<Client>> SearchByPrenom(String prenom) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_PRENOM)) {
             preparedStatement.setString(1, prenom);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -87,7 +91,8 @@ public class ClientImpl implements Iclient {
 
     @Override
     public Optional<Client> Update(Client client) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_CLIENT)) {
             preparedStatement.setString(1, client.getNom());
             preparedStatement.setString(2, client.getPrenom());
@@ -105,9 +110,9 @@ public class ClientImpl implements Iclient {
 
     @Override
     public Optional<Personne> Add(Personne personne) {
-        if (personne instanceof Client) {
-            Client client = (Client) personne;
-            try (Connection connection = DatabaseConnection.getConn();
+        if (personne instanceof Client client) {
+            Connection connection = DatabaseConnection.getConn();
+            try (
                  PreparedStatement preparedStatement = connection.prepareStatement(ADD_CLIENT)) {
                 preparedStatement.setString(1, client.getCode());
                 preparedStatement.setString(2, client.getNom());

@@ -16,10 +16,15 @@ public class AffectationImpl implements Iaffectation {
     private static final String INSERT_AFFECTATION = "INSERT INTO Affectations (employe_matricule, mission_code, nom, description) VALUES (?, ?, ?, ?)";
     private static final String DELETE_AFFECTATION = "DELETE FROM Affectations WHERE employe_matricule = ? AND mission_code = ?";
     private static final String SELECT_AFFECTATIONS_BY_MATRICULE = "SELECT * FROM Affectations WHERE employe_matricule = ?";
+    private static final String TOTAL_AFFECTATIONS = "SELECT COUNT(*) AS TotalAffectations FROM Affectations";
+    private static final String TOTAL_EMPLOYES = "SELECT COUNT(DISTINCT employe_matricule) AS TotalEmployees FROM Affectations";
+    private static final String TOTAL_MISSIONS = "SELECT COUNT(DISTINCT mission_code) AS TotalMissions FROM Affectations";
+
 
     @Override
     public Optional<Affectation> createNewAffectation(Affectation affectation) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(INSERT_AFFECTATION)) {
             preparedStatement.setString(1, affectation.getEmploye().getMatricule());
             preparedStatement.setString(2, affectation.getMission().getCode());
@@ -38,7 +43,8 @@ public class AffectationImpl implements Iaffectation {
 
     @Override
     public boolean DeleteAffectation(Affectation affectation) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(DELETE_AFFECTATION)) {
             preparedStatement.setString(1, affectation.getEmploye().getMatricule());
             preparedStatement.setString(2, affectation.getMission().getCode());
@@ -49,10 +55,12 @@ public class AffectationImpl implements Iaffectation {
         }
     }
 
+
     @Override
     public List<Affectation> getAssignmentHistoryByMatricule(String matricule) {
         List<Affectation> assignmentHistory = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SELECT_AFFECTATIONS_BY_MATRICULE)) {
             preparedStatement.setString(1, matricule);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -79,13 +87,10 @@ public class AffectationImpl implements Iaffectation {
     @Override
     public HashMap<String, Integer> getAffectationStatistics() {
         Connection connection = DatabaseConnection.getConn();
-        String sqlTotalAffectations = "SELECT COUNT(*) AS TotalAffectations FROM Affectations";
-        String sqlTotalEmployees = "SELECT COUNT(DISTINCT employe_matricule) AS TotalEmployees FROM Affectations";
-        String sqlTotalMissions = "SELECT COUNT(DISTINCT mission_code) AS TotalMissions FROM Affectations";
 
-        try (PreparedStatement preparedStatementTotalAffectations = connection.prepareStatement(sqlTotalAffectations);
-             PreparedStatement preparedStatementTotalEmployees = connection.prepareStatement(sqlTotalEmployees);
-             PreparedStatement preparedStatementTotalMissions = connection.prepareStatement(sqlTotalMissions)) {
+        try (PreparedStatement preparedStatementTotalAffectations = connection.prepareStatement(TOTAL_AFFECTATIONS);
+             PreparedStatement preparedStatementTotalEmployees = connection.prepareStatement(TOTAL_EMPLOYES);
+             PreparedStatement preparedStatementTotalMissions = connection.prepareStatement(TOTAL_MISSIONS)) {
 
             ResultSet resultSetTotalAffectations = preparedStatementTotalAffectations.executeQuery();
             ResultSet resultSetTotalEmployees = preparedStatementTotalEmployees.executeQuery();
@@ -102,11 +107,63 @@ public class AffectationImpl implements Iaffectation {
             throw new RuntimeException(e);
         }
     }
+
+
+    public Affectation InsertAffectation(Affectation affectation){
+        Connection connection = DatabaseConnection.getConn();
+        try{
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO Affectations (employe_matricule, mission_code, nom, description) VALUES (?, ?, ?, ?)");
+            preparedStatement.setString(1,affectation.getEmploye().getMatricule());
+            preparedStatement.setString(2,affectation.getMission().getCode());
+            preparedStatement.setString(3,affectation.getNom());
+            preparedStatement.setString(4,affectation.getDescription());
+            int affectationrows = preparedStatement.executeUpdate();
+            if (affectationrows == 0){
+                return null;
+            }else {
+                return affectation;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public List<Affectation> selectAffectation() {
+        Connection connection = DatabaseConnection.getConn();
+        List<Affectation> affectationList = new ArrayList<>();
+
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM AFFECTATIONS"); // Correct table name
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                Affectation affectation = new Affectation(
+                        new Employe(
+                                resultSet.getString("employe_matricule"),
+                                null,  // Replace with the actual values for the remaining 10 arguments
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                        ),
+                        new Mission(resultSet.getString("Mission"), null, null, null),
+                        resultSet.getString("Nom"),
+                        resultSet.getString("Description")
+                );
+
+                affectationList.add(affectation);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return affectationList;
+    }
+
 }
-
-
-
-
-
 
 
